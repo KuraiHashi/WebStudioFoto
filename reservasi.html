@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reservasi — Liquif Picture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"></head><body data-pg="reservasi">
+<nav class="solid"><div class="wrap">
+  <a class="logo" href="index.html"><i></i>liquif <small>Picture</small></a>
+  <div class="menu"><a class="l" href="index.html#profil">Profil</a><a class="l" href="index.html#galeri">Galeri</a><a class="l" href="index.html#paket">Paket</a><a class="l" href="index.html#testimoni">Testimoni</a><a class="l" href="index.html#kontak">Kontak</a>
+  <a class="btn sm" href="cek.html">Cek Reservasi</a><a class="btn sm gold" href="reservasi.html">Reservasi</a></div>
+  <button class="bg" aria-label="Menu"><i></i><i></i><i></i></button>
+</div></nav>
+<main class="pg"><div class="wrap">
+  <div class="crumb"><a href="index.html">Beranda</a> / Reservasi</div>
+  <h1>Reservasi <em>sesi</em></h1>
+  <p class="lead">Lengkapi data berikut. Setelah terkirim, Anda menerima kode reservasi unik untuk cek status dan pembayaran.</p>
+  <div class="seq"><span>1 Pilih paket</span><span class="on">2 Isi reservasi</span><span>3 Cek status &amp; bayar</span></div>
+  <div class="two">
+    <div class="fc" id="rform"><h3>Data reservasi</h3>
+      <div class="fld"><label>Paket</label><select id="rp"></select></div>
+      <div class="r2"><div class="fld"><label>Nama</label><input id="rn" placeholder="Nama lengkap" required></div><div class="fld"><label>Kontak WhatsApp</label><input id="rk" placeholder="081234567890" data-vt="phone" required></div></div>
+      <div class="r2"><div class="fld"><label>Tanggal</label><input id="rt" type="date" data-vt="date" required></div><div class="fld"><label>Jam</label><input id="rj" type="time" required></div></div>
+      <div class="r2"><div class="fld"><label>Durasi</label><select id="rd"><option>1 jam</option><option>2 jam</option><option>3 jam</option><option>4 jam</option></select></div><div class="fld"><label>Lokasi pemotretan</label><input id="rl" placeholder="Studio / nama tempat" required></div></div>
+      <p class="note">Tanggal yang sudah terisi tidak dapat dipilih. Kami tidak pernah meminta OTP, PIN, atau password Anda.</p>
+      <div class="acts"><button class="btn ink" data-act="reserve" data-scope="#rform">Kirim reservasi</button></div></div>
+    <div><div class="fc dk" id="rsum" style="margin-bottom:20px"></div>
+      <div class="fc"><h3>Ketersediaan jadwal</h3><div class="cl"><button id="cp" aria-label="Bulan sebelumnya">‹</button><b id="cm"></b><button id="cn" aria-label="Bulan berikutnya">›</button></div><div class="cal" id="cal"></div>
+      <div class="legend"><span><i></i>Terisi</span><span>Ketuk tanggal kosong untuk memilih</span></div></div></div>
+  </div>
+</div></main>
+<footer style="padding:50px 0 30px"><div class="wrap"><div class="copy" style="margin:0;padding:0;border:0"><span>© Liquif Picture</span><a href="login.html">Login Admin</a></div></div></footer>
+<script src="js/app.js"></script></body></html>

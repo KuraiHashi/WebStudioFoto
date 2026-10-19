@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liquif Picture — Studio Fotografi</title>
+<title>Studio Fotografi — Liquif Picture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css"></head><body>
-
+<link rel="stylesheet" href="css/style.css"></head><body data-pg="index">
 <nav><div class="wrap">
   <a class="logo" href="index.html"><i></i>liquif <small>Picture</small></a>
-  <a class="l" href="#profil">Profil</a><a class="l" href="#galeri">Galeri</a><a class="l" href="#paket">Paket</a><a class="l" href="#testimoni">Testimoni</a><a class="l" href="#kontak">Kontak</a>
-  <a class="btn sm" href="#" data-open="m-cek">Cek Reservasi</a>
-  <a class="btn sm gold" href="#" data-open="m-res">Reservasi</a>
+  <div class="menu"><a class="l" href="#profil">Profil</a><a class="l" href="#galeri">Galeri</a><a class="l" href="#paket">Paket</a><a class="l" href="#testimoni">Testimoni</a><a class="l" href="#kontak">Kontak</a>
+  <a class="btn sm" href="cek.html">Cek Reservasi</a><a class="btn sm gold" href="reservasi.html">Reservasi</a></div>
+  <button class="bg" aria-label="Menu"><i></i><i></i><i></i></button>
 </div></nav>
 
 <header class="hero"><div class="wrap">
@@ -17,7 +16,7 @@
     <div class="eyebrow" style="color:var(--gold)">Studio Fotografi</div>
     <h1 style="margin-top:22px">Cahaya yang mengalir, <em>kenangan</em> yang tinggal.</h1>
     <p>Kami mengabadikan momen Anda dengan sentuhan yang tenang dan personal — dari sesi pemotretan hingga galeri privat yang hanya untuk Anda.</p>
-    <div class="acts"><a class="btn gold" href="#" data-open="m-res">Reservasi Sekarang</a><a class="btn" href="#paket">Lihat Paket</a></div>
+    <div class="acts"><a class="btn gold" href="reservasi.html">Reservasi Sekarang</a><a class="btn" href="#paket">Lihat Paket</a></div>
   </div>
   <div class="vis"><div class="blob ph"></div><div class="dot ph c"></div></div>
 </div></header>
@@ -41,14 +40,7 @@
 
 <section id="paket" style="background:var(--sand)"><div class="wrap">
   <div class="rv"><div class="eyebrow">Paket Layanan</div><h2 style="margin-top:14px">Pilih sesi yang <em>paling sesuai</em></h2></div>
-  <div class="pk rv">
-    <div class="pc"><div class="rn">I</div><h3>Essence</h3><div class="pr">Rp 450.000</div><span class="note">1 jam · 1 lokasi</span>
-      <ul><li>20 foto hasil sunting</li><li>1 konsep pemotretan</li><li>Galeri privat</li></ul><a class="btn sm" href="#" data-open="m-paket" data-pkg="Essence">Lihat detail</a></div>
-    <div class="pc f"><div class="rn">II</div><h3>Signature</h3><div class="pr">Rp 950.000</div><span class="note" style="color:#bfb4a2">2 jam · 2 lokasi</span>
-      <ul><li>45 foto hasil sunting</li><li>2 konsep &amp; 2 busana</li><li>Galeri privat</li><li>Bonus cetak 4R</li></ul><a class="btn sm gold" href="#" data-open="m-paket" data-pkg="Signature">Lihat detail</a></div>
-    <div class="pc"><div class="rn">III</div><h3>Atelier</h3><div class="pr">Rp 1.850.000</div><span class="note">4 jam · bebas lokasi</span>
-      <ul><li>90 foto hasil sunting</li><li>Konsep kustom</li><li>Galeri privat</li><li>Album cetak</li></ul><a class="btn sm" href="#" data-open="m-paket" data-pkg="Atelier">Lihat detail</a></div>
-  </div>
+  <div class="pk rv" id="pkgrid"></div>
 </div></section>
 
 <section class="flow"><div class="wrap">
@@ -64,7 +56,7 @@
     <div><div class="st">★★★★★</div><blockquote>“Suasananya tenang, hasilnya melebihi bayangan kami. Setiap foto terasa seperti kami yang sebenarnya.”</blockquote><p class="note" style="margin-top:18px">— Nama Pelanggan</p></div>
     <div><div class="sq"><div class="st" style="margin:0 0 6px">★★★★★</div>“Proses reservasi dan pembayaran sangat jelas.”<div class="note">— Nama Pelanggan</div></div>
     <div class="sq"><div class="st" style="margin:0 0 6px">★★★★☆</div>“Galeri privatnya praktis, mudah diunduh.”<div class="note">— Nama Pelanggan</div></div>
-    <a class="btn sm" style="margin-top:10px" href="#" data-open="m-testi">Tulis testimoni</a></div>
+    <a class="btn sm" style="margin-top:10px" href="cek.html">Tulis testimoni</a><p class="note" style="margin-top:8px">Testimoni dapat diisi setelah sesi selesai, lewat menu Cek Reservasi.</p></div>
   </div>
 </div></section>
 
@@ -76,50 +68,5 @@
   </div>
   <div class="copy"><span>© Liquif Picture</span><a href="login.html">Login Admin</a></div>
 </div></footer>
-
-<!-- ===== POP UP PELANGGAN ===== -->
-<div class="ov" id="m-paket"><div class="md"><button class="x" data-close>×</button>
-  <div class="eyebrow">Detail Paket</div><h3 id="pk-n"></h3>
-  <div class="ph b" style="height:150px;border-radius:14px;margin-bottom:20px"></div>
-  <div class="kv"><i>Harga</i><span id="pk-h"></span><i>Durasi</i><span id="pk-d"></span><i>Deskripsi</i><span id="pk-x"></span><i>Fasilitas</i><span id="pk-f"></span><i>Bonus</i><span id="pk-b"></span></div>
-  <div class="acts"><a class="btn ink" href="#" data-open="m-res" data-pre="1">Reservasi paket ini</a></div></div></div>
-
-<div class="ov" id="m-res"><div class="md" data-clear><button class="x" data-close>×</button>
-  <div class="eyebrow">Reservasi</div><h3>Pesan sesi Anda</h3>
-  <div class="fld"><label>Paket</label><select id="rp"><option>Essence</option><option selected>Signature</option><option>Atelier</option></select></div>
-  <div class="r2"><div class="fld"><label>Nama</label><input id="rn" placeholder="Nama lengkap" required></div><div class="fld"><label>Kontak WhatsApp</label><input id="rk" placeholder="081234567890" data-vt="phone" required></div></div>
-  <div class="r2"><div class="fld"><label>Tanggal</label><input id="rt" type="date" data-vt="date" required></div><div class="fld"><label>Jam</label><input id="rj" type="time" required></div></div>
-  <div class="r2"><div class="fld"><label>Durasi</label><select id="rd"><option>1 jam</option><option>2 jam</option><option>3 jam</option><option>4 jam</option></select></div><div class="fld"><label>Lokasi pemotretan</label><input id="rl" placeholder="Studio / nama tempat" required></div></div>
-  <p class="note">Tanggal yang sudah terisi tidak dapat dipilih. Kami tidak pernah meminta OTP, PIN, atau password Anda.</p>
-  <div class="acts"><button class="btn ink" data-act="reserve">Kirim reservasi</button></div></div></div>
-
-<div class="ov" id="m-cek"><div class="md w" data-clear><button class="x" data-close>×</button>
-  <div class="eyebrow">Cek Reservasi</div><h3>Status reservasi</h3>
-  <div class="fld"><label>Kode reservasi</label><div class="row-in"><input class="kc" id="kc" placeholder="LQ7K4M9RTX" maxlength="14" autocomplete="off"><button class="btn sm ink" data-act="lookup">Cek</button></div></div>
-  <div id="kres" class="hide">
-    <div class="steps" id="r-steps"></div>
-    <div class="kv"><i>Nama</i><span id="r-n"></span><i>Paket</i><span id="r-p"></span><i>Jadwal</i><span id="r-j"></span><i>Lokasi</i><span id="r-l"></span><i>Total</i><span id="r-t"></span><i>DP (50%)</i><span id="r-dp"></span><i>Pelunasan</i><span id="r-pl"></span><i>Status</i><span id="r-st"></span></div>
-    <p class="note" id="r-msg"></p>
-    <p class="note lock" id="r-lock">🔒 Hasil foto terbuka setelah status “Selesai” (pelunasan terverifikasi).</p>
-    <div class="acts" id="r-acts"></div></div></div></div>
-
-<div class="ov" id="m-bayar"><div class="md" data-clear><button class="x" data-close>×</button>
-  <div class="eyebrow">Pembayaran</div><h3>Unggah bukti bayar</h3>
-  <div class="kv"><i>Kode</i><span id="b-code"></span><i>Jenis</i><span id="b-jenis"></span><i>Total paket</i><span id="b-total"></span><i>Nominal</i><span id="b-nom"></span><i>Rekening</i><span>BANK 000-000-000<br>a.n. Liquif Picture</span><i>Batas waktu</i><span id="b-batas"></span></div>
-  <div class="fld"><label class="drop"><span class="dn">Ketuk untuk memilih bukti pembayaran</span><br><span class="note">JPG / PNG / PDF · maks. 5 MB</span><input type="file" accept=".jpg,.jpeg,.png,.pdf,image/*"  required></label></div>
-  <p class="note">Transfer hanya ke rekening resmi di atas. Setelah terkirim, status berubah menjadi menunggu verifikasi admin.</p>
-  <div class="acts"><button class="btn ink" data-act="pay">Kirim bukti</button></div></div></div>
-
-<div class="ov" id="m-foto"><div class="md w"><button class="x" data-close>×</button>
-  <div class="eyebrow">Galeri Privat</div><h3>Hasil foto Anda</h3>
-  <div class="mg"><div class="ph"></div><div class="ph b"></div><div class="ph c"></div><div class="ph d"></div><div class="ph e"></div><div class="ph b"></div></div>
-  <p class="note">Hanya dapat dibuka dengan kode reservasi Anda.</p>
-  <div class="acts"><button class="btn sm" data-toast="Mengunduh foto terpilih…">Unduh terpilih</button><button class="btn sm ink" data-toast="Mengunduh semua foto…">Unduh semua</button></div></div></div>
-
-<div class="ov" id="m-testi"><div class="md" data-clear><button class="x" data-close>×</button>
-  <div class="eyebrow">Testimoni</div><h3>Ceritakan pengalaman Anda</h3>
-  <div class="fld"><label>Rating</label><div class="stars" data-req><span>☆</span><span>☆</span><span>☆</span><span>☆</span><span>☆</span></div></div>
-  <div class="fld"><label>Testimoni</label><textarea rows="4" placeholder="Tulis di sini…" data-vt="min" data-min="10" required></textarea></div>
-  <div class="acts"><button class="btn ink" data-ok="Terima kasih atas testimoni Anda|Testimoni sudah kami terima dan akan membantu calon pelanggan lain.">Kirim testimoni</button></div></div></div>
 
 <script src="js/app.js"></script></body></html>
