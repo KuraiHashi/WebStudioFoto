@@ -3,88 +3,14 @@
 <title>Dashboard Admin — Liquif Picture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css"></head><body data-adm>
-
-<div class="dsh">
-  <aside class="sb">
-    <a class="logo" href="index.html"><i></i>liquif <small>Admin</small></a>
-    <button class="m on"><b>01</b>Reservasi</button>
-    <button class="m" data-open="a-lap"><b>02</b>Laporan</button>
-    <button class="m" data-open="a-paket"><b>03</b>Paket Fotografi</button>
-    <button class="m" data-open="a-gal"><b>04</b>Galeri Studio</button>
-    <button class="m" data-open="a-prof"><b>05</b>Profil Studio</button>
-    <a class="m out" href="login.html"><b>↩</b>Logout</a>
-  </aside>
-
-  <main class="main">
-    <div class="top"><div><div class="eyebrow">Dashboard</div><h2 style="margin-top:12px">Selamat datang, <em>Admin</em></h2></div>
-      <a class="btn sm" href="#" data-open="a-lap">Lihat laporan</a></div>
-
-    <div class="kp"><div><span>Reservasi baru</span><b>08</b></div><div><span>Menunggu verifikasi</span><b>03</b></div><div><span>Sesi minggu ini</span><b>05</b></div><div><span>Menunggu hasil foto</span><b>02</b></div></div>
-
-    <div class="cols">
-      <div class="card"><h3>Kelola reservasi &amp; pembayaran</h3>
-        <div class="tw"><table>
-          <tr><th>Kode</th><th>Pelanggan</th><th>Paket</th><th>Jadwal</th><th>Status</th><th>Aksi</th></tr>
-          <tr><td>LQ9T5C6XAB</td><td>Nama A</td><td>Signature</td><td>24 Okt</td><td><span class="pill wa">Menunggu pelunasan</span></td><td><button class="btn sm" data-open="a-res">Detail</button></td></tr>
-          <tr><td>LQ3D8H2WNP</td><td>Nama B</td><td>Essence</td><td>21 Okt</td><td><span class="pill wa">Konfirmasi bayar</span></td><td><button class="btn sm ink" data-open="a-bayar">Verifikasi</button></td></tr>
-          <tr><td>LQ6M8J3FYZ</td><td>Nama C</td><td>Atelier</td><td>17 Okt</td><td><span class="pill ok">Selesai</span></td><td><button class="btn sm" data-open="a-upl">Hasil foto</button></td></tr>
-          <tr><td>LQ7K4M9RTX</td><td>Nama D</td><td>Essence</td><td>10 Okt</td><td><span class="pill">Menunggu bayar</span></td><td><button class="btn sm" data-open="a-res">Detail</button></td></tr>
-          <tr><td>LQ5W9B4HQD</td><td>Nama E</td><td>Signature</td><td>03 Okt</td><td><span class="pill rj">Dibatalkan</span></td><td><button class="btn sm" data-open="a-res">Detail</button></td></tr>
-        </table></div></div>
-      <div class="card"><h3>Jadwal</h3><div class="cal" id="cal"></div><p class="note" style="margin-top:14px">Tanggal gelap sudah terisi — dipakai untuk mencegah bentrok jadwal.</p></div>
-    </div>
-  </main>
-</div>
-
-<!-- ===== POP UP ADMIN ===== -->
-<div class="ov" id="a-res"><div class="md"><button class="x" data-close>×</button>
-  <div class="eyebrow">Detail Reservasi</div><h3>LQ9T5C6XAB</h3>
-  <div class="kv"><i>Identitas</i><span>Nama A · 0812-0000-0000</span><i>Paket</i><span>Signature</span><i>Jadwal</i><span>24 Okt 2026 · 10.00 · 2 jam</span><i>Lokasi</i><span>Studio</span><i>Bentrok</i><span><span class="pill ok">Tidak ada bentrok</span></span></div>
-  <div class="acts"><button class="btn sm ink" data-ok="Reservasi dikonfirmasi|Status diperbarui. Pelanggan dapat melihatnya lewat menu Cek Reservasi.">Konfirmasi</button><button class="btn sm" data-toast="Status reservasi diperbarui">Ubah status</button><button class="btn sm no" data-toggle="#rs">Tolak</button></div>
-  <div id="rs" class="hide" style="margin-top:20px"><div class="fld"><label>Alasan penolakan (wajib)</label><textarea rows="3" placeholder="Tulis alasan…" data-vt="min" data-min="10" required></textarea></div><button class="btn sm no" data-scope="#rs" data-confirm="Reservasi akan ditolak dan alasan ditampilkan ke pelanggan." data-ok="Reservasi ditolak|Alasan penolakan tersimpan dan dapat dilihat pelanggan.">Simpan penolakan</button></div></div></div>
-
-<div class="ov" id="a-bayar"><div class="md"><button class="x" data-close>×</button>
-  <div class="eyebrow">Verifikasi Pembayaran</div><h3>LQ3D8H2WNP</h3>
-  <div class="kv"><i>Jenis</i><span>DP</span><i>Nominal</i><span>Rp 225.000</span><i>Status</i><span><span class="pill wa">Menunggu verifikasi</span></span></div>
-  <div class="ph c" style="height:150px;border-radius:14px"></div><p class="note" style="margin-top:8px">Bukti dari pelanggan. Pastikan nominal dan nama pengirim sesuai.</p>
-  <div class="acts"><button class="btn ink" data-confirm="Verifikasi pembayaran ini? Status pelanggan akan diperbarui." data-ok="Pembayaran terverifikasi|Status pembayaran diperbarui dan terlihat oleh pelanggan di Cek Reservasi.">Verifikasi</button></div></div></div>
-
-<div class="ov" id="a-upl"><div class="md" data-clear><button class="x" data-close>×</button>
-  <div class="eyebrow">Hasil Foto</div><h3>LQ6M8J3FYZ</h3>
-  <div class="fld"><label class="drop"><span class="dn">Pilih atau seret file hasil foto</span><br><span class="note">JPG / PNG · maks. 5 MB per file</span><input type="file" accept=".jpg,.jpeg,.png,.pdf,image/*" multiple required></label></div>
-  <div class="mg"><div class="ph"></div><div class="ph b"></div><div class="ph d"></div></div>
-  <div class="kv"><i>Kode akses</i><span>LQ6M8J3FYZ</span><i>Unduh</i><span><span class="pill ok">Aktif — lunas</span></span></div>
-  <div class="acts"><button class="btn sm no" data-confirm="Hapus foto terpilih dari galeri pelanggan?" data-toast="Foto terpilih dihapus">Hapus terpilih</button><button class="btn sm ink" data-ok="Hasil foto terunggah|Foto tersimpan di galeri privat dan dapat dibuka pelanggan dengan kode reservasinya.">Unggah</button></div></div></div>
-
-<div class="ov" id="a-lap"><div class="md w"><button class="x" data-close>×</button>
-  <div class="eyebrow">Laporan</div><h3>Reservasi &amp; pembayaran</h3>
-  <div class="r2"><div class="fld"><label>Dari</label><input type="date"></div><div class="fld"><label>Sampai</label><input type="date"></div></div>
-  <div class="r2"><div class="fld"><label>Nama / kode</label><input></div><div class="fld"><label>Status bayar</label><select><option>Semua</option><option>Lunas</option><option>Belum lunas</option></select></div></div>
-  <div class="tw"><table style="min-width:0"><tr><th>Kode</th><th>Pelanggan</th><th>Total</th><th>Status</th></tr><tr><td>LQ6M8J3FYZ</td><td>Nama C</td><td>Rp 1.850.000</td><td><span class="pill ok">Lunas</span></td></tr><tr><td>LQ9T5C6XAB</td><td>Nama A</td><td>Rp 950.000</td><td><span class="pill wa">DP</span></td></tr></table></div>
-  <p class="note" style="margin-top:10px">Kosong: “Data laporan tidak ditemukan”.</p>
-  <div class="acts"><button class="btn ink" data-toast="Laporan diperbarui">Cari</button></div></div></div>
-
-<div class="ov" id="a-paket"><div class="md w"><button class="x" data-close>×</button>
-  <div class="eyebrow">Paket Fotografi</div><h3>Kelola paket</h3>
-  <div class="tw"><table style="min-width:0"><tr><th>Paket</th><th>Harga</th><th></th></tr><tr><td>Essence</td><td>Rp 450.000</td><td><button class="btn sm">Edit</button> <button class="btn sm no" data-confirm="Hapus paket Essence?" data-toast="Paket dihapus">Hapus</button></td></tr><tr><td>Signature</td><td>Rp 950.000</td><td><button class="btn sm">Edit</button> <button class="btn sm no" data-confirm="Hapus paket Signature?" data-toast="Paket dihapus">Hapus</button></td></tr></table></div>
-  <div class="r2" style="margin-top:20px"><div class="fld"><label>Nama paket</label><input required></div><div class="fld"><label>Harga (Rp)</label><input data-vt="num" required></div></div>
-  <div class="r2"><div class="fld"><label>Durasi</label><input required></div><div class="fld"><label>Fasilitas &amp; bonus</label><input required></div></div>
-  <div class="acts"><button class="btn sm ink" data-toast="Paket tersimpan">Simpan</button></div></div></div>
-
-<div class="ov" id="a-gal"><div class="md w" data-clear><button class="x" data-close>×</button>
-  <div class="eyebrow">Galeri Studio</div><h3>Kelola galeri</h3>
-  <div class="mg"><div class="ph"></div><div class="ph b"></div><div class="ph c"></div><div class="ph d"></div><div class="ph e"></div><div class="ph b"></div></div>
-  <div class="fld"><label class="drop"><span class="dn">Unggah foto baru</span><br><span class="note">Format &amp; ukuran divalidasi otomatis</span><input type="file" accept=".jpg,.jpeg,.png,.pdf,image/*" multiple required></label></div>
-  <div class="acts"><button class="btn sm no" data-confirm="Hapus foto terpilih dari galeri studio?" data-toast="Foto terpilih dihapus">Hapus terpilih</button><button class="btn sm ink" data-toast="Foto galeri diunggah">Unggah</button></div></div></div>
-
-<div class="ov" id="a-prof"><div class="md"><button class="x" data-close>×</button>
-  <div class="eyebrow">Profil Studio</div><h3>Ubah profil</h3>
-  <div class="fld"><label>Nama studio</label><input value="Liquif Picture" required></div>
-  <div class="fld"><label>Alamat</label><input value="Jl. Contoh Alamat No. 00" required></div>
-  <div class="r2"><div class="fld"><label>Kontak</label><input value="0812-0000-0000" data-vt="phone" required></div><div class="fld"><label>Jam operasional</label><input value="09.00–17.00" required></div></div>
-  <div class="fld"><label>Media sosial</label><input value="@liquifpicture"></div>
-  <div class="fld"><label>Deskripsi</label><textarea rows="3"></textarea></div>
-  <div class="acts"><button class="btn ink" data-toast="Profil studio disimpan">Simpan perubahan</button></div></div></div>
-
+<link rel="stylesheet" href="css/style.css"></head><body data-pg="dashboard" data-adm>
+<div class="mbar"><a class="logo" href="dashboard.html"><i></i>liquif <small>Admin</small></a><button class="bg" aria-label="Menu"><i></i><i></i><i></i></button></div><div class="sbk"></div>
+<div class="dsh"><aside class="sb"><a class="logo" href="dashboard.html"><i></i>liquif <small>Admin</small></a><a class="m on" href="dashboard.html"><b>01</b>Reservasi</a><a class="m" href="laporan.html"><b>02</b>Laporan</a><a class="m" href="paket-admin.html"><b>03</b>Paket Fotografi</a><a class="m" href="galeri-admin.html"><b>04</b>Galeri Studio</a><a class="m" href="profil-admin.html"><b>05</b>Profil Studio</a><a class="m out" href="login.html"><b>↩</b>Logout</a></aside>
+<main class="main"><div class="top"><div><div class="eyebrow">Dashboard</div><h2 style="margin-top:12px">Selamat datang, <em>Admin</em></h2></div><a class="btn sm" href="laporan.html">Lihat laporan</a></div>
+<div class="kp" id="kp"></div>
+<div class="cols"><div class="card"><h3>Kelola reservasi &amp; pembayaran</h3>
+  <div class="flt" style="margin-bottom:12px"><div class="fld" style="margin:0"><label>Cari nama / kode</label><input id="fq" placeholder="Ketik untuk mencari…"></div><div class="fld" style="margin:0"><label>Status</label><select id="fs"><option value="">Semua</option><option value="bayar">Menunggu pembayaran DP</option><option value="verif">Konfirmasi pembayaran</option><option value="lunasi">Menunggu pelunasan</option><option value="verif2">Verifikasi pelunasan</option><option value="selesai">Selesai</option><option value="batal">Dibatalkan</option></select></div></div>
+  <div class="tw rt"><table id="rtab"></table></div></div>
+  <div class="card"><h3>Jadwal</h3><div class="cl"><button id="cp" aria-label="Bulan sebelumnya">‹</button><b id="cm"></b><button id="cn" aria-label="Bulan berikutnya">›</button></div><div class="cal" id="cal"></div><p class="note" style="margin-top:14px">Tanggal gelap sudah terisi — dipakai untuk mencegah bentrok jadwal.</p></div></div>
+</main></div>
 <script src="js/app.js"></script></body></html>
