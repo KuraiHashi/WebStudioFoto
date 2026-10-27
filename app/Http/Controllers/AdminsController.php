@@ -20,7 +20,14 @@ class AdminsController extends Controller
     {
         return view('TemplateAdmin.dashboard');
     }
-
+    /**
+     * Display LAPORAN.
+     */
+    public function laporan()
+    {
+        return view('TemplateAdmin.laporan');
+    }
+   
 
 
 

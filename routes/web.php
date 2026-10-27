@@ -6,6 +6,7 @@ use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', [AdminsController::class, 'TemplateAdmin']);
 Route::get('/dashboard', [AdminsController::class, 'Dashboard']);
+Route::get('/laporan', [AdminsController::class, 'laporan']);
 
 
 // Route::get('/', function () {
