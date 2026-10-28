@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Galery;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AdminsController extends Controller
 {
@@ -29,6 +31,64 @@ class AdminsController extends Controller
     }
    
 
+
+
+
+    // GALERY CONTROLLER //
+
+    public function galeryindex()
+    {
+        $galeries = Galery::latest()->get();
+        return view('TemplateAdmin.galery', compact('galeries'));
+    }
+
+    /**
+     * Store Uploaded Gallery Photos.
+     */
+    public function storeGalery(Request $request)
+    {
+        $request->validate([
+            'photos.*' => 'required|image|mimes:jpg,jpeg,png|max:5120', // Maks 5MB per file
+        ]);
+
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                // Simpan ke storage/app/public/galeri
+                $path = $file->store('galeri', 'public');
+
+                // Simpan path ke database
+                Galery::create([
+                    'filename' => $path
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Foto berhasil diunggah!');
+    }
+
+    /**
+     * Delete Selected Gallery Photos.
+     */
+    public function destroyGalery(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:galeries,id',
+        ]);
+
+        $galeries = Galery::whereIn('id', $request->ids)->get();
+
+        foreach ($galeries as $item) {
+            // Hapus file fisik dari storage
+            if (Storage::disk('public')->exists($item->filename)) {
+                Storage::disk('public')->delete($item->filename);
+            }
+            // Hapus data dari database
+            $item->delete();
+        }
+
+        return response()->json(['success' => 'Foto terpilih berhasil dihapus.']);
+    }
 
 
 
