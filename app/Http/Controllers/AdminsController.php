@@ -29,6 +29,27 @@ class AdminsController extends Controller
     {
         return view('TemplateAdmin.laporan');
     }
+    /**
+     * Display GALERY.
+     */
+    public function galery()
+    {
+        return view('TemplateAdmin.galery');
+    }
+    /**
+     * Display FOTOGRAFY.
+     */
+    public function fotografy()
+    {
+        return view('TemplateAdmin.fotografy');
+    }
+    /**
+     * Display PROFILE.
+     */
+    public function profile()
+    {
+        return view('TemplateAdmin.profile');
+    }
    
 
 
