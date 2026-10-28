@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laporan — Liquif Picture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"></head><body data-pg="laporan" data-adm>
+<div class="mbar"><a class="logo" href="dashboard.html"><i></i>liquif <small>Admin</small></a><button class="bg" aria-label="Menu"><i></i><i></i><i></i></button></div><div class="sbk"></div>
+<div class="dsh"><aside class="sb"><a class="logo" href="dashboard.html"><i></i>liquif <small>Admin</small></a><a class="m" href="dashboard.html"><b>01</b>Reservasi</a><a class="m on" href="laporan.html"><b>02</b>Laporan</a><a class="m" href="paket-admin.html"><b>03</b>Paket Fotografi</a><a class="m" href="galeri-admin.html"><b>04</b>Galeri Studio</a><a class="m" href="profil-admin.html"><b>05</b>Profil Studio</a><a class="m out" href="login.html"><b>↩</b>Logout</a></aside>
+<main class="main"><div class="top"><div><div class="eyebrow">Laporan</div><h2 style="margin-top:12px">Reservasi &amp; <em>pembayaran</em></h2></div></div>
+<div class="fc" id="lform"><div class="flt"><div class="fld"><label>Dari</label><input id="ld" type="date"></div><div class="fld"><label>Sampai</label><input id="lt" type="date"></div><div class="fld"><label>Nama / kode</label><input id="lq"></div><div class="fld"><label>Status</label><select id="ls"><option value="">Semua</option><option value="bayar">Menunggu pembayaran DP</option><option value="verif">Konfirmasi pembayaran</option><option value="lunasi">Menunggu pelunasan</option><option value="verif2">Verifikasi pelunasan</option><option value="selesai">Selesai</option><option value="batal">Dibatalkan</option></select></div></div>
+<div class="acts" style="margin-top:18px"><button class="btn ink" data-act="lap" data-scope="#lform">Cari</button></div></div>
+<div class="sum" id="lsum"></div><div class="card"><div class="tw rt"><table id="ltab"></table></div></div>
+</main></div>
+<script src="js/app.js"></script></body></html>
