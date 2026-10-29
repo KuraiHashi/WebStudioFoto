@@ -7,14 +7,32 @@
                 <div class="eyebrow">Paket Fotografi</div>
                 <h2 style="margin-top: 12px">Kelola <em>paket</em></h2>
             </div>
-            <button class="btn gold" data-act="newpk">
+            <button class="btn gold" type="button" onclick="openModal('m-tambah')">
                 + Tambah paket
             </button>
         </div>
 
+        {{-- Notifikasi Sukses --}}
+        @if(session('success'))
+            <div style="background: #dfe8d5; color: #3f5a35; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        {{-- Notifikasi Error Validasi --}}
+        @if($errors->any())
+            <div style="background: #f0d6cd; color: #8a3d2d; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
+                <ul style="margin-left: 20px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="card bare">
             <div class="tw rt" style="overflow-x: auto;">
-                <!-- Tabel Manual -->
+                <!-- Tabel Data -->
                 <table class="table" id="ptab-manual" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
@@ -26,58 +44,144 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- Contoh data statis / loop dari Controller --}}
-                        {{-- @foreach ($pakets as $index => $item) --}}
+                        @forelse ($pakets as $item)
                         <tr>
-                            <td style="padding: 12px;">Paket Wedding Standard</td>
-                            <td style="padding: 12px;">Rp 3.500.000</td>
-                            <td style="padding: 12px;">6 Jam</td>
-                            <td style="padding: 12px;">Liputan akad dan resepsi</td>
+                            <td style="padding: 12px;">
+                                <strong>{{ $item->name }}</strong>
+                                @if($item->bonus)
+                                    <br><small style="color: #b8860b;">Bonus: {{ $item->bonus }}</small>
+                                @endif
+                            </td>
+                            <td style="padding: 12px;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                            <td style="padding: 12px;">{{ $item->duration }}</td>
+                            <td style="padding: 12px;">{{ $item->description ?? '-' }}</td>
                             <td style="padding: 12px; text-align: center;">
-                                <button class="btn sm" style="margin-right: 4px;">Edit</button>
-                                <button class="btn sm ink" style="background-color: #dc3545; color: white;">Hapus</button>
+                                <div style="display: flex; justify-content: center; gap: 4px;">
+                                    <!-- Tombol Edit memanggil modal unik berdasarkan ID -->
+                                    <button type="button" class="btn sm" onclick="openModal('m-edit-{{ $item->id }}')">Edit</button>
+
+                                    <!-- Tombol Hapus -->
+                                    <form action="{{ route('admin.fotografi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');" style="margin: 0;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn sm ink" style="background-color: #dc3545; color: white; border: none;">Hapus</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
-                        {{-- @endforeach --}}
+
+                        <!-- Modal Edit untuk setiap item (Murni Blade) -->
+                        <div class="ov" id="m-edit-{{ $item->id }}">
+                            <div class="md w">
+                                <button type="button" class="x" onclick="closeModal('m-edit-{{ $item->id }}')">×</button>
+                                <div class="eyebrow">Paket fotografi</div>
+                                <h3>Edit paket</h3>
+                                
+                                <form method="POST" action="{{ route('admin.fotografi.update', $item->id) }}">
+                                    @csrf
+                                    @method('PUT')
+
+                                    <div class="r2">
+                                        <div class="fld">
+                                            <label>Nama paket</label>
+                                            <input name="name" value="{{ $item->name }}" required />
+                                        </div>
+                                        <div class="fld">
+                                            <label>Harga (Rp)</label>
+                                            <input name="price" value="{{ $item->price }}" inputmode="numeric" required />
+                                        </div>
+                                    </div>
+                                    <div class="r2">
+                                        <div class="fld">
+                                            <label>Durasi</label>
+                                            <input name="duration" value="{{ $item->duration }}" required />
+                                        </div>
+                                        <div class="fld">
+                                            <label>Bonus (opsional)</label>
+                                            <input name="bonus" value="{{ $item->bonus }}" />
+                                        </div>
+                                    </div>
+                                    <div class="fld">
+                                        <label>Deskripsi</label>
+                                        <input name="description" value="{{ $item->description }}" />
+                                    </div>
+                                    <div class="fld">
+                                        <label>Fasilitas (pisahkan dengan koma)</label>
+                                        <input name="facilities" value="{{ $item->facilities }}" required />
+                                    </div>
+                                    <div class="acts">
+                                        <button type="button" class="btn sm" onclick="closeModal('m-edit-{{ $item->id }}')">Batal</button>
+                                        <button type="submit" class="btn sm ink">Simpan Perubahan</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        @empty
+                        <tr>
+                            <td colspan="5" style="padding: 20px; text-align: center; color: #777;">Belum ada paket fotografi tersedia.</td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <div class="ov" id="m-pk">
-        <div class="md w" data-clear>
-            <button class="x" data-close>×</button>
+    <!-- Modal Tambah Paket -->
+    <div class="ov" id="m-tambah">
+        <div class="md w">
+            <button type="button" class="x" onclick="closeModal('m-tambah')">×</button>
             <div class="eyebrow">Paket fotografi</div>
-            <h3 id="pkt">Tambah paket</h3>
-            <div class="r2">
-                <div class="fld">
-                    <label>Nama paket</label><input id="pn" required />
+            <h3>Tambah paket</h3>
+            
+            <form method="POST" action="{{ route('admin.fotografi.store') }}">
+                @csrf
+                <div class="r2">
+                    <div class="fld">
+                        <label>Nama paket</label>
+                        <input name="name" required />
+                    </div>
+                    <div class="fld">
+                        <label>Harga (Rp)</label>
+                        <input name="price" inputmode="numeric" required />
+                    </div>
+                </div>
+                <div class="r2">
+                    <div class="fld">
+                        <label>Durasi</label>
+                        <input name="duration" placeholder="mis. 2 jam" required />
+                    </div>
+                    <div class="fld">
+                        <label>Bonus (opsional)</label>
+                        <input name="bonus" />
+                    </div>
                 </div>
                 <div class="fld">
-                    <label>Harga (Rp)</label><input id="ph" inputmode="numeric" data-vt="num" required />
-                </div>
-            </div>
-            <div class="r2">
-                <div class="fld">
-                    <label>Durasi</label><input id="pd" placeholder="mis. 2 jam" required />
+                    <label>Deskripsi</label>
+                    <input name="description" placeholder="Ringkasan singkat paket" />
                 </div>
                 <div class="fld">
-                    <label>Bonus (opsional)</label><input id="pb" />
+                    <label>Fasilitas (pisahkan dengan koma)</label>
+                    <input name="facilities" placeholder="20 foto sunting, 1 lokasi, galeri privat" required />
                 </div>
-            </div>
-            <div class="fld">
-                <label>Deskripsi</label><input id="px" placeholder="Ringkasan singkat paket" />
-            </div>
-            <div class="fld">
-                <label>Fasilitas (pisahkan dengan koma)</label><input id="pf"
-                    placeholder="20 foto sunting, 1 lokasi, galeri privat" required />
-            </div>
-            <div class="acts">
-                <button class="btn sm" data-close>Batal</button><button class="btn sm ink" data-act="savepk">
-                    Simpan paket
-                </button>
-            </div>
+                <div class="acts">
+                    <button type="button" class="btn sm" onclick="closeModal('m-tambah')">Batal</button>
+                    <button type="submit" class="btn sm ink">Simpan paket</button>
+                </div>
+            </form>
         </div>
     </div>
+
+    <script>
+        // Fungsi JS sederhana HANYA untuk buka/tutup modal berdasarkan ID (Tanpa manipulasi AJAX/URL)
+        function openModal(modalId) {
+            let modal = document.getElementById(modalId);
+            if (modal) modal.classList.add('on');
+        }
+
+        function closeModal(modalId) {
+            let modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('on');
+        }
+    </script>
 @endsection

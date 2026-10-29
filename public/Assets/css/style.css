@@ -329,3 +329,15 @@ nav .menu{display:contents}
  #ptab td[data-l=Aksi]{grid-column:1/-1}
 }
 @media(max-width:560px){.top>.btn.gold{width:100%;justify-content:center}}
+
+.masonry .ph {
+    transition: background-image 0.8s ease-in-out, opacity 0.8s ease-in-out;
+}
+
+/* Membuat iframe Google Maps mengikuti ukuran kotak pembungkusnya */
+.map.ph iframe {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 200px;
+    border: 0;
+}

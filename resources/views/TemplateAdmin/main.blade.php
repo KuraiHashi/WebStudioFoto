@@ -22,9 +22,9 @@
             <a class="logo" href="dashboard.html"><i></i>liquif <small>Admin</small></a>
             <a class="m @yield('dashboard')" href="/dashboard"><b>01</b>Reservasi</a>
             <a class="m @yield('laporan')" href="/laporan"><b>02</b>Laporan</a>
-            <a class="m @yield('fotografy')" href="/fotografy"><b>03</b>Paket Fotografi</a>
+            <a class="m @yield('fotografy')" href="/fotografi"><b>03</b>Paket Fotografi</a>
             <a class="m @yield('galery')" href="/admin/galery"><b>04</b>Galeri Studio</a>
-            <a class="m @yield('profile')" href="/profile"><b>05</b>Profil Studio</a>
+            <a class="m @yield('profile')" href="/admin/profile"><b>05</b>Profil Studio</a>
             <a class="m out" href="login.html"><b>↩</b>Logout</a>
         </aside>
 

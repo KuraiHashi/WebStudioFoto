@@ -6,20 +6,10 @@ const CH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 
-// ---------- Data contoh ----------
-const PK0 = [
-  { n: 'Essence', h: 450000, d: '1 jam', x: 'Sesi singkat dengan satu konsep.', f: '20 foto sunting · 1 lokasi · galeri privat', b: '—' },
-  { n: 'Signature', h: 950000, d: '2 jam', x: 'Sesi dua konsep dengan arahan penuh.', f: '45 foto sunting · 2 lokasi · galeri privat', b: 'Cetak 4R' },
-  { n: 'Atelier', h: 1850000, d: '4 jam', x: 'Konsep kustom dengan waktu longgar.', f: '90 foto sunting · bebas lokasi · galeri privat', b: 'Album cetak' }
-];
-const DB0 = {
-  LQ7K4M9RTX: { s: 'bayar',  n: 'Nama D', hp: '081200000004', p: 'Essence',   t: '2026-10-30', jm: '09.00', d: '1 jam', l: 'Studio', f: 0 },
-  LQ3D8H2WNP: { s: 'verif',  n: 'Nama B', hp: '081200000002', p: 'Essence',   t: '2026-10-21', jm: '13.00', d: '1 jam', l: 'Studio', f: 0 },
-  LQ9T5C6XAB: { s: 'lunasi', n: 'Nama A', hp: '081200000001', p: 'Signature', t: '2026-10-24', jm: '10.00', d: '2 jam', l: 'Studio', f: 0 },
-  LQ4R2N7VKE: { s: 'verif2', n: 'Nama F', hp: '081200000006', p: 'Essence',   t: '2026-10-16', jm: '15.00', d: '1 jam', l: 'Luar studio', f: 0 },
-  LQ6M8J3FYZ: { s: 'selesai',n: 'Nama C', hp: '081200000003', p: 'Atelier',   t: '2026-10-12', jm: '08.00', d: '4 jam', l: 'Luar studio', f: 1 },
-  LQ5W9B4HQD: { s: 'batal',  n: 'Nama E', hp: '081200000005', p: 'Signature', t: '2026-10-03', jm: '11.00', d: '2 jam', l: 'Studio', f: 0, alasan: 'Jadwal bentrok dengan acara studio.' }
-};
+// ---------- Data contoh (Dihapus/Dikosongkan) ----------
+const PK0 = [];
+const DB0 = {};
+
 let PK = load('lq_pk2', PK0), DB = load('lq_db2', DB0);
 const sv = () => { save('lq_pk2', PK); save('lq_db2', DB); };
 const pkOf = n => PK.find(p => p.n === n);
@@ -31,7 +21,7 @@ const LAB = ['Pembayaran DP', 'Konfirmasi', 'Pelunasan', 'Selesai'];
 const ST = {
   bayar:  { step: 0, dp: ['Belum dibayar', 'wa'], pl: ['Setelah DP terverifikasi', ''], tag: ['Menunggu pembayaran DP', 'wa'], act: 'DP', msg: 'Segera bayar DP minimal 50% agar jadwal Anda dikunci.' },
   verif:  { step: 1, dp: ['Menunggu verifikasi', 'wa'], pl: ['Setelah DP terverifikasi', ''], tag: ['Konfirmasi pembayaran', 'wa'], msg: 'Bukti DP sedang diperiksa admin (maksimal 1×24 jam).' },
-  lunasi: { step: 2, dp: ['Terverifikasi', 'ok'], pl: ['Belum dibayar', 'wa'], tag: ['Menunggu pelunasan', 'wa'], act: 'Pelunasan', msg: 'DP sudah diterima. Lakukan pelunasan setelah sesi pemotretan.' },
+  lunasi: { step: 2, dp: ['Terverifikasi', 'ok'], pl: ['Belum dibayar', 'wa'], tag: ['Menunggu pelunasan', 'wa'], msg: 'DP sudah diterima. Lakukan pelunasan setelah sesi pemotretan.' },
   verif2: { step: 2, dp: ['Terverifikasi', 'ok'], pl: ['Menunggu verifikasi', 'wa'], tag: ['Verifikasi pelunasan', 'wa'], msg: 'Bukti pelunasan sedang diperiksa admin.' },
   selesai:{ step: 3, dp: ['Terverifikasi', 'ok'], pl: ['Terverifikasi', 'ok'], tag: ['Selesai — lunas', 'ok'], foto: 1, msg: 'Pembayaran lunas. Hasil foto Anda dapat dibuka dan diunduh.' },
   batal:  { step: -1, dp: ['—', ''], pl: ['—', ''], tag: ['Dibatalkan', 'rj'], msg: 'Reservasi ini dibatalkan.' }
@@ -134,13 +124,7 @@ function calInit(pick) {
 }
 
 // ---------- Pelanggan ----------
-function pkCards() {
-  const g = q('#pkgrid'); if (!g) return;
-  g.innerHTML = PK.map((p, i) => {
-    const f = i === 1, rn = ['I', 'II', 'III', 'IV', 'V', 'VI'][i] || i + 1;
-    return `<div class="pc${f ? ' f' : ''}"><div class="rn">${rn}</div><h3>${p.n}</h3><div class="pr">${rp(p.h)}</div><span class="note"${f ? ' style="color:#bfb4a2"' : ''}>${p.d}</span><ul>${p.f.split(' · ').map(x => `<li>${x}</li>`).join('')}${p.b && p.b !== '—' ? `<li>Bonus ${p.b}</li>` : ''}</ul><a class="btn sm${f ? ' gold' : ''}" href="paket.html?p=${encodeURIComponent(p.n)}">Lihat detail</a></div>`;
-  }).join('') || '<p class="note">Belum ada paket tersedia.</p>';
-}
+
 function sum() {
   const p = pkOf(q('#rp').value);
   q('#rsum').innerHTML = p ? `<div class="eyebrow" style="color:var(--gold)">Ringkasan paket</div><h3 style="margin:12px 0 4px">${p.n}</h3><div style="font:500 28px var(--serif);color:var(--gold)">${rp(p.h)}</div><p style="opacity:.75;margin-top:8px;font-size:14px">${p.d} · ${p.f}</p>` : '';
@@ -294,7 +278,7 @@ document.addEventListener('keydown', e => {
 // ---------- Inisialisasi per halaman ----------
 const nav = q('nav');
 if (nav) { const f = () => nav.classList.toggle('s', nav.classList.contains('solid') || scrollY > 40); f(); addEventListener('scroll', f); }
-pkCards();
+
 if (PG === 'paket') {
   let n = qs('p'); if (!pkOf(n)) n = (PK[0] || {}).n; const p = pkOf(n);
   if (!p) q('#pk-n').textContent = 'Paket tidak tersedia';

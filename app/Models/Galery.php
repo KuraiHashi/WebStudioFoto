@@ -10,4 +10,5 @@ class Galery extends Model
     use HasFactory;
 
     protected $fillable = ['filename'];
+    protected $table = 'galeries';
 }

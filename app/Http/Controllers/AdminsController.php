@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Galery;
+use App\Models\PhotographyPackage;
+use App\Models\StudioProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,28 +31,7 @@ class AdminsController extends Controller
     {
         return view('TemplateAdmin.laporan');
     }
-    /**
-     * Display GALERY.
-     */
-    public function galery()
-    {
-        return view('TemplateAdmin.galery');
-    }
-    /**
-     * Display FOTOGRAFY.
-     */
-    public function fotografy()
-    {
-        return view('TemplateAdmin.fotografy');
-    }
-    /**
-     * Display PROFILE.
-     */
-    public function profile()
-    {
-        return view('TemplateAdmin.profile');
-    }
-   
+
 
 
 
@@ -113,12 +94,120 @@ class AdminsController extends Controller
 
 
 
+    // PROFILE STUDIO //    
+
+    /**
+     * Display PROFILE.
+     */
+    public function profileIndex()
+    {
+        // Ambil data profil pertama (atau buat kosong jika belum ada)
+        $profile = StudioProfile::first();
+        return view('TemplateAdmin.profile', compact('profile'));
+    }
+
+    /**
+     * Update PROFILE STUDIO.
+     */
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'phone' => 'required|string|max:20',
+            'operational_hours' => 'required|string|max:100',
+            'social_media' => 'nullable|string|max:100',
+            'maps_link' => 'nullable|string', // Diubah dari 'url' menjadi 'string' agar bisa menerima tag iframe
+            'description' => 'required|string',
+        ]);
+
+        StudioProfile::updateOrCreate(
+            ['id' => 1],
+            [
+                'name' => $request->name,
+                'address' => $request->address,
+                'phone' => $request->phone,
+                'operational_hours' => $request->operational_hours,
+                'social_media' => $request->social_media,
+                'maps_link' => $request->maps_link, // Menyimpan string iframe secara langsung
+                'description' => $request->description,
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Profil studio berhasil diperbarui!');
+    }
+
+
+    // PAKET FOTOGRAPHY //
+
+    public function fotografy()
+    {
+        $pakets = PhotographyPackage::latest()->get();
+        return view('TemplateAdmin.fotografy', compact('pakets'));
+    }
+
+    /**
+     * Store a newly created photography package.
+     */
+    public function storeFotografy(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'duration' => 'required|string|max:50',
+            'bonus' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'facilities' => 'required|string',
+        ]);
+
+        PhotographyPackage::create($request->all());
+
+        return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil ditambahkan!');
+    }
+
+    /**
+     * Update the specified photography package.
+     */
+    public function updateFotografy(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'duration' => 'required|string|max:50',
+            'bonus' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'facilities' => 'required|string',
+        ]);
+
+        $paket = PhotographyPackage::findOrFail($id);
+        $paket->update($request->all());
+
+        return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil diperbarui!');
+    }
+
+    /**
+     * Remove the specified photography package.
+     */
+    public function destroyFotografy($id)
+    {
+        $paket = PhotographyPackage::findOrFail($id);
+        $paket->delete();
+
+        return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil dihapus!');
+    }
+
+
+
+
+
+
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        // 
     }
 
     /**
