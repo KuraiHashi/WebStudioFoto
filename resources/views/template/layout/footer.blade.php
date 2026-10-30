@@ -3,16 +3,21 @@
         <div class="fg">
             <div><a class="logo" href="index.html" style="margin-bottom:18px"><i></i>liquif
                     <small>Picture</small></a>
-                <p>Studio fotografi untuk momen yang ingin Anda simpan selamanya.</p>
+                <p>{{ $studio->description ?? '-'}}</p>
             </div>
             <div>
                 <h4>Info Studio</h4>
-                <p>Jl. Contoh Alamat No. 00<br>0812-0000-0000<br>Senin–Sabtu · 09.00–17.00<br>@liquifpicture</p>
+                <p>
+                    {{ $studio->address ?? 'Alamat' }}<br>
+                    {{ $studio->phone ?? 'Contact' }}<br>
+                    {{ $studio->operational_hours ?? 'Jam Operational' }}<br>
+                    {{ $studio->social_media ?? 'Media Sosial' }}
+                </p>
             </div>
             <div>
                 <h4>Lokasi</h4>
                 <div class="map ph">
-                    @if(!empty($studio->maps_link))
+                    @if (!empty($studio->maps_link))
                         {!! $studio->maps_link !!}
                     @else
                         <span>Google Maps</span>

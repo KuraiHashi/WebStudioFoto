@@ -2,12 +2,18 @@
 
 use App\Http\Controllers\AdminsController;
 use App\Http\Controllers\GaleriController;
+use App\Http\Controllers\PaketFotografiController;
 use Illuminate\Support\Facades\Route;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', [GaleriController::class, 'index']);
 Route::get('/dashboard', [AdminsController::class, 'Dashboard']);
 Route::get('/laporan', [AdminsController::class, 'laporan']);
+
+
+// USER VIEW
+    // PAKET FOTOGRAFI
+    Route::get('/paket/{id}', [PaketFotografiController::class, 'show'])->name('paket.detail');
 
 
 
