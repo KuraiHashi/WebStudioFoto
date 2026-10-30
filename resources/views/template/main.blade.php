@@ -28,6 +28,12 @@
         </div>
     </nav>
 
+    {{-- KONTEN DETAIL --}}
+    @yield('konten_detail')
+
+    @sectionMissing('konten_detail')
+
+
     <header class="hero">
         <div class="wrap">
             <div>
@@ -65,17 +71,21 @@
         </div>
     </section>
 
-    {{-- GALERY --}}
-    @include('template/layout/galery')
 
-    {{-- PAKET FOTOGRAFI --}}
-    @include('template/layout/paket_fotografi')
 
-    {{-- ALUR RESERVASI --}}
-    @include('template/layout/reservasi')
 
-    {{-- TESTIMONI --}}
-    @include('template/layout/testimoni')
+        {{-- GALERY --}}
+        @include('template/layout/galery')
+
+        {{-- PAKET FOTOGRAFI --}}
+        @include('paketFotografi/paket_fotografi')
+
+        {{-- ALUR RESERVASI --}}
+        @include('template/layout/reservasi')
+
+        {{-- TESTIMONI --}}
+        @include('template/layout/testimoni')
+    @endif
     
     {{-- FOOTER --}}
     @include('template/layout/footer')

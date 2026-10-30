@@ -20,5 +20,10 @@ class PhotographyPackage extends Model
         'bonus',
         'description',
         'facilities',
+        'photos',
+    ];
+    // Otomatis convert JSON dari database ke array PHP
+    protected $casts = [
+        'photos' => 'array',
     ];
 }

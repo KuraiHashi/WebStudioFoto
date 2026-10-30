@@ -146,9 +146,6 @@ class AdminsController extends Controller
         return view('TemplateAdmin.fotografy', compact('pakets'));
     }
 
-    /**
-     * Store a newly created photography package.
-     */
     public function storeFotografy(Request $request)
     {
         $request->validate([
@@ -158,16 +155,27 @@ class AdminsController extends Controller
             'bonus' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'facilities' => 'required|string',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:4048', // Validasi tiap file foto (maks 2MB)
         ]);
 
-        PhotographyPackage::create($request->all());
+        $data = $request->except('photos');
+        $photoPaths = [];
+
+        // Proses upload banyak foto
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                // Simpan ke folder public/storage/packages
+                $path = $photo->store('packages', 'public');
+                $photoPaths[] = $path;
+            }
+            $data['photos'] = $photoPaths;
+        }
+
+        PhotographyPackage::create($data);
 
         return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil ditambahkan!');
     }
 
-    /**
-     * Update the specified photography package.
-     */
     public function updateFotografy(Request $request, $id)
     {
         $request->validate([
@@ -177,10 +185,24 @@ class AdminsController extends Controller
             'bonus' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'facilities' => 'required|string',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:4048',
         ]);
 
         $paket = PhotographyPackage::findOrFail($id);
-        $paket->update($request->all());
+        $data = $request->except('photos');
+
+        $photoPaths = $paket->photos ?? []; // Ambil foto lama jika ada
+
+        // Jika user mengunggah foto baru
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('packages', 'public');
+                $photoPaths[] = $path; // Gabungkan dengan foto lama
+            }
+            $data['photos'] = $photoPaths;
+        }
+
+        $paket->update($data);
 
         return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil diperbarui!');
     }
