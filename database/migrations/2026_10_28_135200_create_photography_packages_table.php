@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('bonus')->nullable();
             $table->text('description')->nullable();
             $table->text('facilities'); // Disimpan sebagai string (misal dipisah koma atau JSON)
+            $table->json('photos')->nullable();
             $table->timestamps();
         });
     }

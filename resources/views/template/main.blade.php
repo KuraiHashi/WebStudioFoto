@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap"
         rel="stylesheet">
@@ -22,11 +23,17 @@
                     class="l" href="#paket">Paket</a><a class="l" href="#testimoni">Testimoni</a><a
                     class="l" href="#kontak">Kontak</a>
                 <a class="btn sm" href="cek.html">Cek Reservasi</a><a class="btn sm gold"
-                    href="reservasi.html">Reservasi</a>
+                    href="/reservasi">Reservasi</a>
             </div>
             <button class="bg" aria-label="Menu"><i></i><i></i><i></i></button>
         </div>
     </nav>
+
+    {{-- KONTEN DETAIL --}}
+    @yield('konten_detail')
+
+    @sectionMissing('konten_detail')
+
 
     <header class="hero">
         <div class="wrap">
@@ -65,17 +72,21 @@
         </div>
     </section>
 
-    {{-- GALERY --}}
-    @include('template/layout/galery')
 
-    {{-- PAKET FOTOGRAFI --}}
-    @include('template/layout/paket_fotografi')
 
-    {{-- ALUR RESERVASI --}}
-    @include('template/layout/reservasi')
 
-    {{-- TESTIMONI --}}
-    @include('template/layout/testimoni')
+        {{-- GALERY --}}
+        @include('template/layout/galery')
+
+        {{-- PAKET FOTOGRAFI --}}
+        @include('paketFotografi/paket_fotografi')
+
+        {{-- ALUR RESERVASI --}}
+        @include('template/layout/reservasi')
+
+        {{-- TESTIMONI --}}
+        @include('template/layout/testimoni')
+    @endif
     
     {{-- FOOTER --}}
     @include('template/layout/footer')
