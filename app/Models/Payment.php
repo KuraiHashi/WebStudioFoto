@@ -13,14 +13,20 @@ class Payment extends Model
         'reservation_id',
         'token',
         'status',
-        'amount',
-        'receipt_photo',
+        'tagihan',
+        'total_paid',
+        'description',
         'notes',
     ];
 
-    // Relasi ke tabel Reservation
     public function reservation()
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    // Relasi ke detail/riwayat pembayaran
+    public function histories()
+    {
+        return $this->hasMany(PaymentHistory::class);
     }
 }

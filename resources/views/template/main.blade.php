@@ -22,7 +22,7 @@
             <div class="menu"><a class="l" href="#profil">Profil</a><a class="l" href="#galeri">Galeri</a><a
                     class="l" href="#paket">Paket</a><a class="l" href="#testimoni">Testimoni</a><a
                     class="l" href="#kontak">Kontak</a>
-                <a class="btn sm" href="cek.html">Cek Reservasi</a><a class="btn sm gold"
+                <a class="btn sm" href="/reservasi/cek">Cek Reservasi</a><a class="btn sm gold"
                     href="/reservasi">Reservasi</a>
             </div>
             <button class="bg" aria-label="Menu"><i></i><i></i><i></i></button>

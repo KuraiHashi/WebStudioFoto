@@ -14,11 +14,16 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
-            $table->string('token'); // Mengikuti token dari reservasi
-            $table->enum('status', ['DP', 'LUNAS', 'KONSULTASI'])->default('DP');
-            $table->decimal('amount', 12, 2)->nullable();
-            $table->string('receipt_photo')->nullable(); // Foto kwitansi / bukti transfer
-            $table->text('notes')->nullable();
+            $table->string('token')->unique(); 
+            
+            // Status: KONSULTASI, DP, atau LUNAS
+            $table->enum('status', ['KONSULTASI', 'DP', 'LUNAS'])->default('KONSULTASI'); 
+            
+            $table->decimal('tagihan', 12, 2)->default(0);    // Total tagihan akhir
+            $table->decimal('total_paid', 12, 2)->default(0); // Akumulasi uang yang sudah dibayar
+            
+            $table->text('description')->nullable();       // Breakdown / rincian penyesuaian harga
+            $table->text('notes')->nullable();             // Catatan umum
             $table->timestamps();
         });
     }
