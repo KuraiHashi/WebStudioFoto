@@ -12,24 +12,6 @@
             </button>
         </div>
 
-        {{-- Notifikasi Sukses --}}
-        @if(session('success'))
-            <div style="background: #dfe8d5; color: #3f5a35; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        {{-- Notifikasi Error Validasi --}}
-        @if($errors->any())
-            <div style="background: #f0d6cd; color: #8a3d2d; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                <ul style="margin-left: 20px;">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <div class="card bare">
             <div class="tw rt" style="overflow-x: auto;">
                 <!-- Tabel Data -->
@@ -45,104 +27,116 @@
                     </thead>
                     <tbody>
                         @forelse ($pakets as $item)
-                        <tr>
-                            <td style="padding: 12px;">
-                                <strong>{{ $item->name }}</strong>
-                                @if($item->bonus)
-                                    <br><small style="color: #b8860b;">Bonus: {{ $item->bonus }}</small>
-                                @endif
-                            </td>
-                            <td style="padding: 12px;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                            <td style="padding: 12px;">{{ $item->duration }}</td>
-                            <td style="padding: 12px;">{{ $item->description ?? '-' }}</td>
-                            <td style="padding: 12px; text-align: center;">
-                                <div style="display: flex; justify-content: center; gap: 4px;">
-                                    <!-- Tombol Edit -->
-                                    <button type="button" class="btn sm" onclick="openModal('m-edit-{{ $item->id }}')">Edit</button>
+                            <tr>
+                                <td style="padding: 12px;">
+                                    <strong>{{ $item->name }}</strong>
+                                    @if ($item->bonus)
+                                        <br><small style="color: #b8860b;">Bonus: {{ $item->bonus }}</small>
+                                    @endif
+                                </td>
+                                <td style="padding: 12px;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                                <td style="padding: 12px;">{{ $item->duration }}</td>
+                                <td style="padding: 12px;">{{ $item->description ?? '-' }}</td>
+                                <td style="padding: 12px; text-align: center;">
+                                    <div style="display: flex; justify-content: center; gap: 4px;">
+                                        <!-- Tombol Edit -->
+                                        <button type="button" class="btn sm"
+                                            onclick="openModal('m-edit-{{ $item->id }}')">Edit</button>
 
-                                    <!-- Tombol Hapus -->
-                                    <form action="{{ route('admin.fotografi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');" style="margin: 0;">
+                                        <!-- Tombol Hapus dengan SweetAlert2 -->
+                                        <form id="delete-form-{{ $item->id }}"
+                                            action="{{ route('admin.fotografi.destroy', $item->id) }}" method="POST"
+                                            style="margin: 0;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn sm ink"
+                                                style="background-color: #dc3545; color: white; border: none;"
+                                                onclick="confirmDelete({{ $item->id }})">Hapus</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Modal Edit untuk setiap item -->
+                            <div class="ov" id="m-edit-{{ $item->id }}">
+                                <div class="md w">
+                                    <button type="button" class="x"
+                                        onclick="closeModal('m-edit-{{ $item->id }}')">×</button>
+                                    <div class="eyebrow">Paket fotografi</div>
+                                    <h3>Edit paket</h3>
+
+                                    <form method="POST" action="{{ route('admin.fotografi.update', $item->id) }}"
+                                        enctype="multipart/form-data">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn sm ink" style="background-color: #dc3545; color: white; border: none;">Hapus</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+                                        @method('PUT')
 
-                        <!-- Modal Edit untuk setiap item -->
-                        <div class="ov" id="m-edit-{{ $item->id }}">
-                            <div class="md w">
-                                <button type="button" class="x" onclick="closeModal('m-edit-{{ $item->id }}')">×</button>
-                                <div class="eyebrow">Paket fotografi</div>
-                                <h3>Edit paket</h3>
-                                
-                                <form method="POST" action="{{ route('admin.fotografi.update', $item->id) }}" enctype="multipart/form-data">
-                                    @csrf
-                                    @method('PUT')
-
-                                    <div class="r2">
-                                        <div class="fld">
-                                            <label>Nama paket</label>
-                                            <input name="name" value="{{ $item->name }}" required />
-                                        </div>
-                                        <div class="fld">
-                                            <label>Harga (Rp)</label>
-                                            <input name="price" value="{{ $item->price }}" inputmode="numeric" required />
-                                        </div>
-                                    </div>
-                                    <div class="r2">
-                                        <div class="fld">
-                                            <label>Durasi</label>
-                                            <input name="duration" value="{{ $item->duration }}" required />
-                                        </div>
-                                        <div class="fld">
-                                            <label>Bonus (opsional)</label>
-                                            <input name="bonus" value="{{ $item->bonus }}" />
-                                        </div>
-                                    </div>
-                                    <div class="fld">
-                                        <label>Deskripsi</label>
-                                        <input name="description" value="{{ $item->description }}" />
-                                    </div>
-                                    <div class="fld">
-                                        <label>Fasilitas (pisahkan dengan koma)</label>
-                                        <input name="facilities" value="{{ $item->facilities }}" required />
-                                    </div>
-
-                                    {{-- Input File Gaya Dropzone Galeri --}}
-                                    <div class="fld">
-                                        <label>Tambah Foto Paket (Bisa pilih banyak sekaligus)</label>
-                                        <label class="drop">
-                                            <span class="dn">Pilih atau seret foto tambahan paket</span><br />
-                                            <span class="note">JPG / PNG / WEBP · maks. 2 MB per file</span>
-                                            <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*" multiple />
-                                        </label>
-                                    </div>
-
-                                    {{-- Preview Foto Saat Ini --}}
-                                    @if($item->photos)
-                                        <div class="fld">
-                                            <label>Foto Saat Ini:</label>
-                                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
-                                                @foreach($item->photos as $photo)
-                                                    <img src="{{ asset('storage/' . $photo) }}" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
-                                                @endforeach
+                                        <div class="r2">
+                                            <div class="fld">
+                                                <label>Nama paket</label>
+                                                <input name="name" value="{{ $item->name }}" required />
+                                            </div>
+                                            <div class="fld">
+                                                <label>Harga (Rp)</label>
+                                                <input name="price" value="{{ $item->price }}" inputmode="numeric"
+                                                    required />
                                             </div>
                                         </div>
-                                    @endif
+                                        <div class="r2">
+                                            <div class="fld">
+                                                <label>Durasi</label>
+                                                <input name="duration" value="{{ $item->duration }}" required />
+                                            </div>
+                                            <div class="fld">
+                                                <label>Bonus (opsional)</label>
+                                                <input name="bonus" value="{{ $item->bonus }}" />
+                                            </div>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Deskripsi</label>
+                                            <input name="description" value="{{ $item->description }}" />
+                                        </div>
+                                        <div class="fld">
+                                            <label>Fasilitas (pisahkan dengan koma)</label>
+                                            <input name="facilities" value="{{ $item->facilities }}" required />
+                                        </div>
 
-                                    <div class="acts">
-                                        <button type="button" class="btn sm" onclick="closeModal('m-edit-{{ $item->id }}')">Batal</button>
-                                        <button type="submit" class="btn sm ink">Simpan Perubahan</button>
-                                    </div>
-                                </form>
+                                        {{-- Input File Gaya Dropzone Galeri --}}
+                                        <div class="fld">
+                                            <label>Tambah Foto Paket (Bisa pilih banyak sekaligus)</label>
+                                            <label class="drop">
+                                                <span class="dn">Pilih atau seret foto tambahan paket</span><br />
+                                                <span class="note">JPG / PNG / WEBP · maks. 2 MB per file</span>
+                                                <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*"
+                                                    multiple />
+                                            </label>
+                                        </div>
+
+                                        {{-- Preview Foto Saat Ini --}}
+                                        @if ($item->photos)
+                                            <div class="fld">
+                                                <label>Foto Saat Ini:</label>
+                                                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
+                                                    @foreach ($item->photos as $photo)
+                                                        <img src="{{ asset('storage/' . $photo) }}" alt="Foto"
+                                                            style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <div class="acts">
+                                            <button type="button" class="btn sm"
+                                                onclick="closeModal('m-edit-{{ $item->id }}')">Batal</button>
+                                            <button type="submit" class="btn sm ink">Simpan Perubahan</button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
                         @empty
-                        <tr>
-                            <td colspan="5" style="padding: 20px; text-align: center; color: #777;">Belum ada paket fotografi tersedia.</td>
-                        </tr>
+                            <tr>
+                                <td colspan="5" style="padding: 20px; text-align: center; color: #777;">Belum ada paket
+                                    fotografi tersedia.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -156,7 +150,7 @@
             <button type="button" class="x" onclick="closeModal('m-tambah')">×</button>
             <div class="eyebrow">Paket fotografi</div>
             <h3>Tambah paket</h3>
-            
+
             <form method="POST" action="{{ route('admin.fotografi.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="r2">
@@ -194,7 +188,7 @@
                     <label class="drop">
                         <span class="dn">Pilih atau seret foto portofolio paket</span><br />
                         <span class="note">JPG / PNG / WEBP · maks. 4 MB per file</span>
-                        <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*" multiple required />
+                        <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*" multiple />
                     </label>
                 </div>
 
@@ -206,6 +200,30 @@
         </div>
     </div>
 
+    {{-- Script SweetAlert2 Otomatis untuk Flash Message Laravel --}}
+    @if (session('success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                showConfirmButton: false,
+                timer: 2500
+            });
+        </script>
+    @endif
+
+    @if ($errors->any())
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan!',
+                html: `{!! implode('<br>', $errors->all()) !!}`,
+                confirmButtonText: 'OK'
+            });
+        </script>
+    @endif
+
     <script>
         function openModal(modalId) {
             let modal = document.getElementById(modalId);
@@ -216,5 +234,24 @@
             let modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('on');
         }
+
+        // Fungsi konfirmasi hapus menggunakan SweetAlert2
+        function confirmDelete(id) {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Paket fotografi yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-form-' + id).submit();
+                }
+            });
+        }
     </script>
+
 @endsection

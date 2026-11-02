@@ -11,6 +11,8 @@
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('Assets/css/style.css') }}">
+        <!-- SweetAlert2 CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body data-pg="dashboard" data-adm>
@@ -33,6 +35,7 @@
 
     </div>
     <script src="{{ asset('Assets/js/app.js') }}"></script>
+
 </body>
 
 </html>
