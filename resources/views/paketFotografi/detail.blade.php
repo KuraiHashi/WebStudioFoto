@@ -1,7 +1,8 @@
 @extends('template.main')
 
 @section('konten_detail')
-    <main class="pg" style="background: #F3EDE3; background: linear-gradient(180deg, rgba(37, 35, 31, 1) 80px, #F3EDE3 80px);">
+    <main class="pg" style="background: #F3EDE3;
+    background: linear-gradient(180deg, rgba(37, 35, 31, 1) 80px, #F3EDE3 80px);">
         <div class="wrap">
             <div class="crumb">
                 <a href="{{ url('/#paket') }}">Paket</a> / {{ $package->nama_paket ?? $package->name }}
@@ -34,18 +35,18 @@
                         <div class="photo-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
                             @foreach($photos as $index => $photo)
                                 <div class="thumb-item {{ $index === 0 ? 'active' : '' }}" 
-                                   onclick="changeMainPhoto('{{ asset('storage/' . $photo) }}', this)"
-                                   style="
-                                   width: 70px; 
-                                   height: 70px; 
-                                   border-radius: 8px; 
-                                   background-image: url('{{ asset('storage/' . $photo) }}'); 
-                                   background-size: cover; 
-                                   background-position: center; 
-                                   cursor: pointer; 
-                                   flex-shrink: 0;
-                                   border: 2px solid {{ $index === 0 ? 'var(--bronze, #8C7A6B)' : 'transparent' }};
-                                   transition: all 0.2s ease;">
+                                     onclick="changeMainPhoto('{{ asset('storage/' . $photo) }}', this)"
+                                     style="
+                                     width: 70px; 
+                                     height: 70px; 
+                                     border-radius: 8px; 
+                                     background-image: url('{{ asset('storage/' . $photo) }}'); 
+                                     background-size: cover; 
+                                     background-position: center; 
+                                     cursor: pointer; 
+                                     flex-shrink: 0;
+                                     border: 2px solid {{ $index === 0 ? 'var(--bronze, #8C7A6B)' : 'transparent' }};
+                                     transition: all 0.2s ease;">
                                 </div>
                             @endforeach
                         </div>
@@ -67,7 +68,7 @@
                         <i>Bonus</i><span>{{ $package->bonus ?? '-' }}</span>
                     </div>
                     <div class="acts">
-                        <a class="btn ink" href="{{ route('reservasi.index') }}?package_id={{ $package->id }}">Reservasi & Konsul paket ini</a>
+                        <a class="btn ink" href="#">Reservasi paket ini</a>
                         <a class="btn" href="/">Kembali</a>
                     </div>
                 </div>

@@ -3,8 +3,6 @@
 use App\Http\Controllers\AdminsController;
 use App\Http\Controllers\GaleriController;
 use App\Http\Controllers\PaketFotografiController;
-use App\Http\Controllers\RekeningController;
-use App\Http\Controllers\ReservasiController;
 use Illuminate\Support\Facades\Route;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
@@ -39,6 +37,11 @@ Route::get('/reservasi/result', [ReservasiController::class, 'checkStatus'])->na
 // Halaman Form Pembayaran / Upload Bukti (Sesuai referensi 2)
 Route::get('/reservasi/pembayaran', [ReservasiController::class, 'paymentPage'])->name('reservasi.pembayaran');
 Route::post('/reservasi/payment-history', [ReservasiController::class, 'storePaymentHistory'])->name('reservasi.payment.store');
+
+// USER VIEW
+    // PAKET FOTOGRAFI
+    Route::get('/paket/{id}', [PaketFotografiController::class, 'show'])->name('paket.detail');
+
 
 
 // ROUTE GALERY //
