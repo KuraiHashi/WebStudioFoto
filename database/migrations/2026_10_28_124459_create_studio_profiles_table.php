@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -22,7 +21,16 @@ return new class extends Migration
             $table->text('description');
             $table->timestamps();
         });
+
+        Schema::table('studio_profiles', function (Blueprint $table) {
+            $table->string('nama_bank')->nullable();
+            $table->string('no_rekening')->nullable();
+            $table->string('nama_pemilik')->nullable();
+            $table->string('foto_qris')->nullable();
+        });
     }
+
+
 
     /**
      * Reverse the migrations.

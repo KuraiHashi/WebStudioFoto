@@ -10,53 +10,85 @@
         </div>
 
         {{-- Notifikasi Sukses --}}
-        @if(session('success'))
+        @if (session('success'))
             <div class="alert alert-success" style="margin-bottom: 20px; color: green; font-weight: bold;">
                 {{ session('success') }}
             </div>
         @endif
 
-        <form action="{{ route('admin.profile.update') }}" method="POST" class="fc" id="pform" style="max-width: 720px">
+        <form action="{{ route('admin.profile.update') }}" method="POST" enctype="multipart/form-data" class="fc"
+            id="pform" style="max-width: 720px">
             @csrf
             <div class="fld">
                 <label>Nama studio</label>
-                {{-- Tambahkan name="name" --}}
-                <input type="text" name="name" value="{{ old('name', $profile->name ?? 'Liquif Picture') }}" required />
+                <input type="text" name="name" value="{{ old('name', $studio->nama_studio ?? 'Liquif Picture') }}"
+                    required />
             </div>
             <div class="fld">
                 <label>Alamat</label>
-                {{-- Tambahkan name="address" --}}
-                <input type="text" name="address" value="{{ old('address', $profile->address ?? '') }}" required />
+                <input type="text" name="address" value="{{ old('address', $studio->alamat ?? '') }}" required />
             </div>
             <div class="r2">
                 <div class="fld">
                     <label>Kontak</label>
-                    {{-- Tambahkan name="phone" --}}
-                    <input type="text" name="phone" value="{{ old('phone', $profile->phone ?? '') }}" data-vt="phone" required />
+                    <input type="text" name="phone" value="{{ old('phone', $studio->kontak ?? '') }}" data-vt="phone"
+                        required />
                 </div>
                 <div class="fld">
                     <label>Jam operasional</label>
-                    {{-- Tambahkan name="operational_hours" --}}
-                    <input type="text" name="operational_hours" value="{{ old('operational_hours', $profile->operational_hours ?? '') }}" required />
+                    <input type="text" name="operational_hours"
+                        value="{{ old('operational_hours', $studio->jam_operasional ?? '') }}" required />
                 </div>
             </div>
             <div class="fld">
                 <label>Media sosial</label>
-                {{-- Tambahkan name="social_media" --}}
-                <input type="text" name="social_media" value="{{ old('social_media', $profile->social_media ?? '') }}" />
+                <input type="text" name="social_media" value="{{ old('social_media', $studio->media_sosial ?? '') }}" />
             </div>
             <div class="fld">
                 <label>Tautan Google Maps (Embed Iframe)</label>
-                {{-- Ubah dari input text ke textarea agar muat menampung kode iframe --}}
-                <textarea name="maps_link" rows="3" placeholder="Tempel kode iframe Google Maps di sini, contoh: <iframe src=... ></iframe>">{{ old('maps_link', $profile->maps_link ?? '') }}</textarea>
+                <textarea name="maps_link" rows="3"
+                    placeholder="Tempel kode iframe Google Maps di sini, contoh: <iframe src=... ></iframe>">{{ old('maps_link', $studio->google_maps ?? '') }}</textarea>
             </div>
             <div class="fld">
                 <label>Deskripsi</label>
-                {{-- Tambahkan name="description" --}}
-                <textarea name="description" rows="4" required>{{ old('description', $profile->description ?? 'Studio fotografi untuk momen yang ingin Anda simpan selamanya.') }}</textarea>
+                <textarea name="description" rows="4" required>{{ old('description', $studio->deskripsi ?? 'Studio fotografi untuk momen yang ingin Anda simpan selamanya.') }}</textarea>
             </div>
-            <div class="acts">
-                {{-- Ubah button agar berfungsi sebagai submit form --}}
+
+            <!-- INFORMASI PEMBAYARAN STUDIO -->
+            <h4 style="margin-top: 30px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                Informasi Pembayaran (Rekening & QRIS)
+            </h4>
+
+            <div class="r2" style="display: flex; gap: 15px; margin-top: 15px;">
+                <div class="fld" style="flex: 1;">
+                    <label>NAMA BANK</label>
+                    <input type="text" name="nama_bank" placeholder="Cth: BCA / Mandiri"
+                        value="{{ old('nama_bank', $studio->nama_bank ?? '') }}"
+                        style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" />
+                </div>
+                <div class="fld" style="flex: 1;">
+                    <label>NOMOR REKENING</label>
+                    <input type="text" name="no_rekening" placeholder="Cth: 1234567890"
+                        value="{{ old('no_rekening', $studio->no_rekening ?? '') }}"
+                        style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" />
+                </div>
+            </div>
+
+            <div class="r2" style="display: flex; gap: 15px; margin-top: 15px;">
+                <div class="fld" style="flex: 1;">
+                    <label>NAMA PEMILIK REKENING (a.n)</label>
+                    <input type="text" name="nama_pemilik" placeholder="Cth: Liquif Picture"
+                        value="{{ old('nama_pemilik', $studio->nama_pemilik ?? '') }}"
+                        style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" />
+                </div>
+                <div class="fld" style="flex: 1;">
+                    <label>UNGGAH FOTO QRIS</label>
+                    <input type="file" name="foto_qris" accept="image/*"
+                        style="display: block !important; visibility: visible !important; opacity: 1 !important; width: 100%; padding: 8px; border: 1px solid #ccc; background: #fff;" />
+                </div>
+            </div>
+
+            <div class="acts" style="margin-top: 25px;">
                 <button type="submit" class="btn ink">
                     Simpan perubahan
                 </button>

@@ -68,7 +68,7 @@ class ReservasiController extends Controller
         Payment::create([
             'reservation_id' => $reservasi->id,
             'token' => $reservasi->token,
-            'status' => $isConsultation ? 'KONSULTASI' : 'DP',
+            'status' => 'Menunggu pembayaran DP',
             'tagihan' => $package->price,
             'total_paid' => 0,
             'description' => "Harga Paket Dasar: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")",
@@ -165,6 +165,7 @@ class ReservasiController extends Controller
     {
         $token = $request->query('token');
         $payment = null;
+        $studio = StudioProfile::first();
 
         if ($token) {
             $payment = Payment::with(['reservation.package'])->where('token', strtoupper(trim($token)))->first();
@@ -205,7 +206,13 @@ class ReservasiController extends Controller
 
             $newTotalPaid = $payment->total_paid + $request->amount;
             $isLunas = $newTotalPaid >= $payment->tagihan;
-            $newStatus = $isLunas ? 'LUNAS' : 'DP';
+
+            // ✨ Tentukan status baru berdasarkan tahapan pembayaran saat ini
+            if ($payment->status === 'Menunggu pelunasan') {
+                $newStatus = 'Verifikasi pelunasan';
+            } else {
+                $newStatus = 'Konfirmasi pembayaran';
+            }
 
             $payment->update([
                 'total_paid' => $newTotalPaid,

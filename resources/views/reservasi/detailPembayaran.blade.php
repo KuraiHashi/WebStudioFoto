@@ -39,7 +39,7 @@
 
                         <div class="kv" style="margin-bottom: 24px;">
                             <i>Kode</i><span>{{ $payment->token }}</span>
-                            <i>Status Saat Ini</i><span>{{ $payment->status }}</span>
+                            <i>Status Saat Ini</i><span><strong>{{ $payment->status }}</strong></span>
                             <i>Total Tagihan</i><span>Rp {{ number_format($payment->tagihan, 0, ',', '.') }}</span>
                             <i>Sudah Dibayar</i><span>Rp {{ number_format($payment->total_paid, 0, ',', '.') }}</span>
                             <i>Sisa Kekurangan</i><span style="font-weight: bold; color: #d9534f;">Rp
@@ -93,21 +93,22 @@
                                 value="{{ max(0, $payment->tagihan - $payment->total_paid) }}">
                         </div>
 
-                        <div class="fld" style="margin-bottom: 20px;">
+                        <!-- Box Upload Bukti (Dinamis: Opsional jika Cash) -->
+                        <div class="fld" id="receipt_container" style="margin-bottom: 20px;">
                             <label class="drop"
                                 style="display: block; border: 2px dashed #d1c7bd; padding: 24px; text-align: center; cursor: pointer; border-radius: 6px; background: rgba(0,0,0,0.01);">
                                 <span class="dn" id="file-label-text">Ketuk untuk memilih bukti pembayaran</span><br />
                                 <span class="note" style="font-size: 12px; color: #777;">JPG / PNG / PDF · maks. 2
                                     MB</span>
-                                <input type="file" name="receipt_photo" accept=".jpg,.jpeg,.png,.pdf,image/*" required
-                                    style="display: none;"
+                                <input type="file" name="receipt_photo" id="receipt_photo"
+                                    accept=".jpg,.jpeg,.png,.pdf,image/*" required style="display: none;"
                                     onchange="document.getElementById('file-label-text').innerText = this.files[0].name;" />
                             </label>
                         </div>
 
                         <div class="fld" style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 500;">Catatan (Opsional)</label>
-                            <textarea name="notes" rows="2" placeholder="Cth: Transfer atas nama Budi"
+                            <textarea name="notes" rows="2" placeholder="Cth: Transfer atas nama Budi / Pembayaran Tunai di lokasi"
                                 style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; background: transparent; border-radius: 4px;"></textarea>
                         </div>
 
@@ -133,14 +134,20 @@
             const method = document.getElementById('payment_method').value;
             const bankBox = document.getElementById('bank_details_container');
             const qrisBox = document.getElementById('qris_details_container');
+            const receiptInput = document.getElementById('receipt_photo');
 
             bankBox.style.display = 'none';
             qrisBox.style.display = 'none';
 
             if (method === 'Transfer Bank') {
                 bankBox.style.display = 'block';
+                receiptInput.required = true;
             } else if (method === 'QRIS') {
                 qrisBox.style.display = 'block';
+                receiptInput.required = true;
+            } else if (method === 'Cash') {
+                // Untuk pembayaran Cash, bukti foto tidak diwajibkan
+                receiptInput.required = false;
             }
         }
     </script>
@@ -152,36 +159,20 @@
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 let paidAmount = "{{ number_format(session('paid_amount'), 0, ',', '.') }}";
-                let isLunas = {{ session('is_lunas') ? 'true' : 'false' }};
                 let token = "{{ session('token_reservasi') }}";
 
-                if (isLunas) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Pembayaran Lunas!',
-                        text: 'Berhasil melakukan pembayaran sebesar Rp ' + paidAmount +
-                            '. Terima kasih, tagihan Anda sudah LUNAS!',
-                        confirmButtonText: 'Cek Status Reservasi',
-                        confirmButtonColor: '#191512'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "{{ route('reservasi.result') }}?token=" + token;
-                        }
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Bukti Berhasil Dikirim!',
-                        text: 'Berhasil melakukan pembayaran sebesar Rp ' + paidAmount +
-                            '. Silakan lakukan pelunasan sebelum hari pemotretan.',
-                        confirmButtonText: 'Cek Status Reservasi',
-                        confirmButtonColor: '#191512'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "{{ route('reservasi.result') }}?token=" + token;
-                        }
-                    });
-                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Bukti Pembayaran Terkirim!',
+                    text: 'Konfirmasi pembayaran sebesar Rp ' + paidAmount +
+                        ' telah kami terima. Mohon tunggu verifikasi status dari admin.',
+                    confirmButtonText: 'Cek Status Reservasi',
+                    confirmButtonColor: '#191512'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = "{{ route('reservasi.result') }}?token=" + token;
+                    }
+                });
             });
         </script>
     @endif
