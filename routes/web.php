@@ -3,13 +3,26 @@
 use App\Http\Controllers\AdminsController;
 use App\Http\Controllers\GaleriController;
 use App\Http\Controllers\PaketFotografiController;
+use App\Http\Controllers\RekeningController;
 use App\Http\Controllers\ReservasiController;
 use Illuminate\Support\Facades\Route;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', [GaleriController::class, 'index']);
-Route::get('/dashboard', [AdminsController::class, 'Dashboard']);
+// Route API untuk Dashboard Admin (Tanpa Middleware)
+Route::get('/admin/api/reservations', [AdminsController::class, 'getReservations'])->name('admin.api.reservations');
+Route::get('/admin/api/schedule', [AdminsController::class, 'getSchedule'])->name('admin.api.schedule');
+
+// Jika halaman dashboard juga diakses lewat controller ini
+Route::get('/dashboard', [AdminsController::class, 'Dashboard'])->name('admin.dashboard');
+
 Route::get('/laporan', [AdminsController::class, 'laporan']);
+
+// KELOLA REKENING
+Route::get('/rekening', [RekeningController::class, 'index'])->name('rekening.index');
+Route::post('/rekening', [RekeningController::class, 'store'])->name('rekening.store');
+Route::put('/rekening/{rekening}', [RekeningController::class, 'update'])->name('rekening.update');
+Route::delete('/rekening/{rekening}', [RekeningController::class, 'destroy'])->name('rekening.destroy');
 
 
 // USER VIEW

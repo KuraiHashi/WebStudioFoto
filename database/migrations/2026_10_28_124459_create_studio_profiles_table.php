@@ -21,13 +21,6 @@ return new class extends Migration {
             $table->text('description');
             $table->timestamps();
         });
-
-        Schema::table('studio_profiles', function (Blueprint $table) {
-            $table->string('nama_bank')->nullable();
-            $table->string('no_rekening')->nullable();
-            $table->string('nama_pemilik')->nullable();
-            $table->string('foto_qris')->nullable();
-        });
     }
 
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Galery;
 use App\Models\PhotographyPackage;
+use App\Models\Reservation;
 use App\Models\StudioProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,13 +18,64 @@ class AdminsController extends Controller
     {
         return view('TemplateAdmin.main');
     }
-    /**
-     * Display DASHBOARD.
-     */
+    // Menampilkan view sesuai referensi Anda
     public function Dashboard()
     {
         return view('TemplateAdmin.dashboard');
     }
+
+    // Mengambil data reservasi untuk tabel & filter pencarian
+    public function getReservations(Request $request)
+{
+    $query = Reservation::with(['package', 'payment']);
+
+    // Filter Pencarian Nama / Token
+    if ($request->filled('q')) {
+        $keyword = $request->q;
+        $query->where(function($q) use ($keyword) {
+            $q->where('name', 'like', "%{$keyword}%")
+              .orWhere('token', 'like', "%{$keyword}%");
+        });
+    }
+
+    // Filter Status Pembayaran yang Aman (jika payment null dianggap KONSULTASI)
+    if ($request->filled('status')) {
+        $status = $request->status;
+        $query->where(function($q) use ($status) {
+            $q->whereHas('payment', function($subQ) use ($status) {
+                $subQ->where('status', $status);
+            });
+            
+            // Jika status yang dicari KONSULTASI, tampilkan juga yang belum punya record payment
+            if ($status === 'KONSULTASI') {
+                $q->orDoesntHave('payment');
+            }
+        });
+    }
+
+    $reservations = $query->orderBy('date', 'desc')->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $reservations
+    ]);
+}
+
+    // Mengambil data jadwal untuk kalender (mencegah bentrok jadwal)
+    public function getSchedule(Request $request)
+    {
+        $bookedDates = Reservation::select('date', 'time', 'name', 'token')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $bookedDates
+        ]);
+    }
+
+
+
+
+
     /**
      * Display LAPORAN.
      */
