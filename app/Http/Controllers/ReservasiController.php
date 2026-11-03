@@ -40,20 +40,20 @@ class ReservasiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'photography_package_id'        => 'required|exists:photography_packages,id',
-            'name'                          => 'required|string|max:255',
-            'whatsapp'                      => 'required|string|max:20',
-            'date'                          => 'required|date',
-            'time'                          => 'required',
-            'duration'                      => 'required|string',
-            'location'                      => 'required|string',
-            'request_consultation'          => 'nullable|boolean',
-            'consultation_topic'            => 'nullable|string',
-            'consultation_custom_topic'     => 'nullable|string',
-            'consultation_media'            => 'nullable|string',
+            'photography_package_id' => 'required|exists:photography_packages,id',
+            'name' => 'required|string|max:255',
+            'whatsapp' => 'required|string|max:20',
+            'date' => 'required|date',
+            'time' => 'required',
+            'duration' => 'required|string',
+            'location' => 'required|string',
+            'request_consultation' => 'nullable|boolean',
+            'consultation_topic' => 'nullable|string',
+            'consultation_custom_topic' => 'nullable|string',
+            'consultation_media' => 'nullable|string',
             'consultation_offline_location' => 'nullable|string',
-            'consultation_notes'            => 'nullable|string',
-            'source_from'                   => 'nullable|string',
+            'consultation_notes' => 'nullable|string',
+            'source_from' => 'nullable|string',
         ]);
 
         // Auto-generate Token
@@ -67,11 +67,11 @@ class ReservasiController extends Controller
         // Inisialisasi ke tabel payments
         Payment::create([
             'reservation_id' => $reservasi->id,
-            'token'          => $reservasi->token,
-            'status'         => $isConsultation ? 'KONSULTASI' : 'DP',
-            'tagihan'        => $package->price,
-            'total_paid'     => 0,
-            'description'    => "Harga Paket Dasar: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")",
+            'token' => $reservasi->token,
+            'status' => 'Menunggu pembayaran DP',
+            'tagihan' => $package->price,
+            'total_paid' => 0,
+            'description' => "Harga Paket Dasar: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")",
         ]);
 
         // WhatsApp formatting
@@ -120,7 +120,7 @@ class ReservasiController extends Controller
 
         return redirect()->back()->with([
             'swal_success' => true,
-            'token'        => $reservasi->token,
+            'token' => $reservasi->token,
             'whatsapp_url' => $whatsappUrl
         ]);
     }
@@ -165,6 +165,7 @@ class ReservasiController extends Controller
     {
         $token = $request->query('token');
         $payment = null;
+        $studio = StudioProfile::first();
 
         if ($token) {
             $payment = Payment::with(['reservation.package'])->where('token', strtoupper(trim($token)))->first();
@@ -180,11 +181,11 @@ class ReservasiController extends Controller
     public function storePaymentHistory(Request $request)
     {
         $request->validate([
-            'token'          => 'required|exists:payments,token',
-            'amount'         => 'required|numeric|min:1',
+            'token' => 'required|exists:payments,token',
+            'amount' => 'required|numeric|min:1',
             'payment_method' => 'required|string',
-            'receipt_photo'  => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'notes'          => 'nullable|string',
+            'receipt_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'notes' => 'nullable|string',
         ]);
 
         $payment = Payment::where('token', $request->token)->first();
@@ -196,31 +197,49 @@ class ReservasiController extends Controller
             $receiptPath = 'uploads/receipts/' . $filename;
 
             PaymentHistory::create([
-                'payment_id'     => $payment->id,
-                'amount'         => $request->amount,
+                'payment_id' => $payment->id,
+                'amount' => $request->amount,
                 'payment_method' => $request->payment_method,
-                'receipt_photo'  => $receiptPath,
-                'notes'          => $request->notes,
+                'receipt_photo' => $receiptPath,
+                'notes' => $request->notes,
             ]);
 
             $newTotalPaid = $payment->total_paid + $request->amount;
             $isLunas = $newTotalPaid >= $payment->tagihan;
-            $newStatus = $isLunas ? 'LUNAS' : 'DP';
+
+            // ✨ Tentukan status baru berdasarkan tahapan pembayaran saat ini
+            if ($payment->status === 'Menunggu pelunasan') {
+                $newStatus = 'Verifikasi pelunasan';
+            } else {
+                $newStatus = 'Konfirmasi pembayaran';
+            }
 
             $payment->update([
                 'total_paid' => $newTotalPaid,
-                'status'     => $newStatus,
+                'status' => $newStatus,
             ]);
 
             // Redirect kembali ke halaman pembayaran dengan membawa flash session SweetAlert
             return redirect()->route('reservasi.pembayaran', ['token' => $payment->token])->with([
                 'swal_payment_success' => true,
-                'paid_amount'          => $request->amount,
-                'is_lunas'             => $isLunas,
-                'token_reservasi'      => $payment->token,
+                'paid_amount' => $request->amount,
+                'is_lunas' => $isLunas,
+                'token_reservasi' => $payment->token,
             ]);
         }
 
         return redirect()->back()->withErrors('Gagal mengunggah bukti pembayaran.');
+    }
+
+    //pembayaran
+    public function showPaymentForm($booking_code)
+    {
+        $reservation = Reservation::where('booking_code', $booking_code)->firstOrFail();
+
+        // Ambil data profil studio/owner
+        $studio = StudioProfile::first();
+
+        // Arahkan ke file views/reservasi/detailPembayaran.blade.php
+        return view('reservasi.detailPembayaran', compact('reservation', 'studio'));
     }
 }

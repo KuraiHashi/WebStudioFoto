@@ -134,8 +134,32 @@ class AdminsController extends Controller
             ]
         );
 
+        $studio = StudioProfile::first() ?? new StudioProfile();
+
+        $data = $request->only([
+            'nama_studio' => $request->input('name'),
+            'alamat' => $request->input('address'),
+            'kontak' => $request->input('phone'),
+            'jam_operasional' => $request->input('operational_hours'),
+            'media_sosial' => $request->input('social_media'),
+            'google_maps' => $request->input('maps_link'),
+            'deskripsi' => $request->input('description'),
+            'nama_bank' => $request->input('nama_bank'),
+            'no_rekening' => $request->input('no_rekening'),
+            'nama_pemilik' => $request->input('nama_pemilik'),
+        ]);
+
+        // Handle Upload Gambar QRIS
+        if ($request->hasFile('foto_qris')) {
+            $path = $request->file('foto_qris')->store('qris', 'public');
+            $data['foto_qris'] = $path;
+        }
+
+        $studio->fill($data)->save();
+
         return redirect()->back()->with('success', 'Profil studio berhasil diperbarui!');
     }
+
 
 
     // PAKET FOTOGRAPHY //
@@ -217,9 +241,6 @@ class AdminsController extends Controller
 
         return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil dihapus!');
     }
-
-
-
 
 
 
