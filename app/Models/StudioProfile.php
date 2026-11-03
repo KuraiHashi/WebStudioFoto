@@ -19,5 +19,9 @@ class StudioProfile extends Model
         'social_media',
         'maps_link',
         'description',
+        'nama_bank',
+        'no_rekening',
+        'nama_pemilik',
+        'foto_qris',
     ];
 }

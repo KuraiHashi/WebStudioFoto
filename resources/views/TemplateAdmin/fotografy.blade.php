@@ -12,24 +12,6 @@
             </button>
         </div>
 
-        {{-- Notifikasi Sukses --}}
-        @if(session('success'))
-            <div style="background: #dfe8d5; color: #3f5a35; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        {{-- Notifikasi Error Validasi --}}
-        @if($errors->any())
-            <div style="background: #f0d6cd; color: #8a3d2d; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                <ul style="margin-left: 20px;">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <div class="card bare">
             <div class="tw rt" style="overflow-x: auto;">
                 <!-- Tabel Data -->
@@ -63,12 +45,7 @@
                                     <!-- Tombol Hapus -->
                                     <form action="{{ route('admin.fotografi.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');" style="margin: 0;">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn sm ink" style="background-color: #dc3545; color: white; border: none;">Hapus</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+                                        @method('PUT')
 
                         <!-- Modal Edit untuk setiap item -->
                         <div class="ov" id="m-edit-{{ $item->id }}">
@@ -87,18 +64,23 @@
                                             <input name="name" value="{{ $item->name }}" required />
                                         </div>
                                         <div class="fld">
-                                            <label>Harga (Rp)</label>
-                                            <input name="price" value="{{ $item->price }}" inputmode="numeric" required />
-                                        </div>
-                                    </div>
-                                    <div class="r2">
-                                        <div class="fld">
-                                            <label>Durasi</label>
-                                            <input name="duration" value="{{ $item->duration }}" required />
+                                            <label>Deskripsi</label>
+                                            <input name="description" value="{{ $item->description }}" />
                                         </div>
                                         <div class="fld">
-                                            <label>Bonus (opsional)</label>
-                                            <input name="bonus" value="{{ $item->bonus }}" />
+                                            <label>Fasilitas (pisahkan dengan koma)</label>
+                                            <input name="facilities" value="{{ $item->facilities }}" required />
+                                        </div>
+
+                                        {{-- Input File Gaya Dropzone Galeri --}}
+                                        <div class="fld">
+                                            <label>Tambah Foto Paket (Bisa pilih banyak sekaligus)</label>
+                                            <label class="drop">
+                                                <span class="dn">Pilih atau seret foto tambahan paket</span><br />
+                                                <span class="note">JPG / PNG / WEBP · maks. 2 MB per file</span>
+                                                <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*"
+                                                    multiple />
+                                            </label>
                                         </div>
                                     </div>
                                     <div class="fld">
@@ -138,11 +120,11 @@
                                     </div>
                                 </form>
                             </div>
-                        </div>
                         @empty
-                        <tr>
-                            <td colspan="5" style="padding: 20px; text-align: center; color: #777;">Belum ada paket fotografi tersedia.</td>
-                        </tr>
+                            <tr>
+                                <td colspan="5" style="padding: 20px; text-align: center; color: #777;">Belum ada paket
+                                    fotografi tersedia.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -206,6 +188,30 @@
         </div>
     </div>
 
+    {{-- Script SweetAlert2 Otomatis untuk Flash Message Laravel --}}
+    @if (session('success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                showConfirmButton: false,
+                timer: 2500
+            });
+        </script>
+    @endif
+
+    @if ($errors->any())
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan!',
+                html: `{!! implode('<br>', $errors->all()) !!}`,
+                confirmButtonText: 'OK'
+            });
+        </script>
+    @endif
+
     <script>
         function openModal(modalId) {
             let modal = document.getElementById(modalId);
@@ -216,5 +222,24 @@
             let modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('on');
         }
+
+        // Fungsi konfirmasi hapus menggunakan SweetAlert2
+        function confirmDelete(id) {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Paket fotografi yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-form-' + id).submit();
+                }
+            });
+        }
     </script>
+
 @endsection
