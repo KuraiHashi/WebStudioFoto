@@ -15,6 +15,7 @@ class PaymentHistory extends Model
         'payment_method',
         'receipt_photo',
         'notes',
+        'status',
     ];
 
     public function payment()

@@ -19,6 +19,12 @@
                 </div>
             @endif
 
+            @if(session('testimonial_success'))
+                <div class="alert alert-success" style="margin-bottom: 20px; padding: 12px; background: #d4edda; color: #155724; border-radius: 4px;">
+                    {{ session('testimonial_success') }}
+                </div>
+            @endif
+
             <!-- Form Input Token -->
             <form action="{{ route('reservasi.result') }}" method="GET">
                 <div class="fc" style="padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px; margin-top: 20px;">
@@ -47,65 +53,122 @@
             @endif
 
             @if(isset($payment) && $payment)
+                @if($errors->any())
+                    <div class="alert alert-danger" style="margin-top: 24px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 4px;">
+                        <ul style="margin: 0; padding-left: 18px;">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                @php
+                    $reservation = $payment->reservation;
+                    $canPay = $payment->status === 'Menunggu pembayaran DP'
+                        || $payment->status === 'Menunggu pelunasan' && $reservation->session_completed_at !== null;
+                    $statusMessage = match ($payment->status) {
+                        'Masa konsultasi' => 'Reservasi menunggu konsultasi selesai. Admin akan mengaktifkan pembayaran DP setelah kesepakatan.',
+                        'Menunggu pembayaran DP' => 'Silakan bayar DP minimal 50% dan kirim bukti. Jadwal dikunci setelah DP diverifikasi admin.',
+                        'Konfirmasi pembayaran' => 'Bukti DP sudah diterima dan sedang diperiksa admin. Anda belum perlu mengirim bukti lagi.',
+                        'Menunggu pelunasan' => $reservation->session_completed_at
+                            ? 'Sesi pemotretan selesai. Silakan lunasi sisa tagihan dan kirim bukti pelunasan.'
+                            : 'DP sudah disetujui dan jadwal Anda tercatat. Setelah pemotretan selesai, admin akan membuka pelunasan.',
+                        'Verifikasi pelunasan' => 'Bukti pelunasan sudah diterima dan sedang diperiksa admin.',
+                        'Selesai' => match ($reservation->photo_status) {
+                            'diproses' => 'Pembayaran lunas. Hasil foto sedang diproses oleh studio.',
+                            'siap' => 'Hasil foto sudah siap. Gunakan tautan di bawah untuk membukanya.',
+                            default => 'Pembayaran lunas. Reservasi masuk ke antrean hasil foto studio.',
+                        },
+                        'Dibatalkan' => 'Reservasi ini telah dibatalkan. Hubungi studio jika Anda memerlukan bantuan.',
+                        default => 'Hubungi studio untuk informasi lebih lanjut mengenai reservasi Anda.',
+                    };
+                @endphp
                 <div id="kres" style="margin-top: 32px">
                     <div class="fc" style="padding: 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px;">
                         
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                             <h3 style="margin: 0;">Status reservasi</h3>
-                            
-                            <!-- ✨ TAMPILAN STATUS BARU YANG LEBIH ELEGAN DAN ESTETIK -->
                             <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 50px; font-size: 12px; font-weight: 600; letter-spacing: 1px;
-                                @if($payment->status == 'LUNAS') background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
-                                @elseif($payment->status == 'DP') background: #fff8e1; color: #f57f17; border: 1px solid #ffe082;
+                                @if($payment->status == 'Selesai') background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+                                @elseif($payment->status == 'Dibatalkan') background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
                                 @else background: #e0f7fa; color: #00838f; border: 1px solid #80deea; @endif">
-                                
-                                <span style="width: 8px; height: 8px; border-radius: 50%; 
-                                    @if($payment->status == 'LUNAS') background: #2e7d32;
-                                    @elseif($payment->status == 'DP') background: #f57f17;
+                                <span style="width: 8px; height: 8px; border-radius: 50%;
+                                    @if($payment->status == 'Selesai') background: #2e7d32;
+                                    @elseif($payment->status == 'Dibatalkan') background: #721c24;
                                     @else background: #00838f; @endif">
                                 </span>
-                                
-                                STATUS: {{ strtoupper($payment->status) }}
+                                {{ $payment->status }}
                             </div>
                         </div>
 
                         <div class="kv">
-                            <i>Nama</i><span>{{ $payment->reservation->name }}</span>
-                            <i>Paket</i><span>{{ $payment->reservation->package->name }}</span>
-                            <i>Jadwal</i><span>{{ $payment->reservation->date }} ({{ $payment->reservation->time }})</span>
-                            <i>Lokasi</i><span>{{ $payment->reservation->location }}</span>
+                            <i>Nama</i><span>{{ $reservation->name }}</span>
+                            <i>Paket</i><span>{{ $reservation->package->name }}</span>
+                            <i>Jadwal</i><span>{{ $reservation->date }} ({{ $reservation->time }})</span>
+                            <i>Lokasi</i><span>{{ $reservation->location }}</span>
                             <i>Total Tagihan</i><span>Rp {{ number_format($payment->tagihan, 0, ',', '.') }}</span>
                             <i>Sudah Dibayar</i><span>Rp {{ number_format($payment->total_paid, 0, ',', '.') }}</span>
                             <i>Sisa Kekurangan</i><span>Rp {{ number_format(max(0, $payment->tagihan - $payment->total_paid), 0, ',', '.') }}</span>
-                            <i>Status Pembayaran</i><span>{{ $payment->status }}</span>
+                            @if($reservation->session_completed_at)
+                                <i>Sesi</i><span>Selesai</span>
+                            @endif
+                            @if($payment->status === 'Selesai')
+                                <i>Hasil foto</i><span>{{ ['belum_diproses' => 'Menunggu diproses', 'diproses' => 'Sedang diproses', 'siap' => 'Siap'][$reservation->photo_status] ?? 'Menunggu diproses' }}</span>
+                            @endif
                         </div>
-                        
-                        <p class="note" id="r-msg" style="margin-top: 20px;">
-                            @if($payment->status == 'KONSULTASI')
-                                Reservasi Anda sedang dalam tahap konsultasi. Silakan tunggu arahan admin atau lakukan pembayaran DP jika sudah sepakat.
-                            @elseif($payment->status == 'DP')
-                                Silahkan Lakukan proses pembayaran & pelunasan sebelum jadwal pemotretan tiba.
-                            @else
-                                Pembayaran Anda telah lunas. Terima kasih!
-                            @endif
-                        </p>
 
-                        <p class="note lock" id="r-lock" style="margin-top: 10px;">
-                            @if($payment->status == 'LUNAS')
-                                🎉 Hasil foto terbuka karena pelunasan terverifikasi.
-                            @else
-                                🔒 Hasil foto terbuka setelah status “LUNAS” (pelunasan terverifikasi).
-                            @endif
-                        </p>
+                        <p class="note" id="r-msg" style="margin-top: 20px;">{{ $statusMessage }}</p>
 
                         <div class="acts" style="margin-top: 24px; display: flex; gap: 10px;">
-                            @if($payment->status != 'LUNAS')
+                            @if($canPay)
                                 <a href="{{ route('reservasi.pembayaran', ['token' => $payment->token]) }}" class="btn ink" style="background: #191512; color: #fff; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-size: 14px; font-weight: 500;">
-                                    {{ $payment->status == 'KONSULTASI' ? 'Bayar DP / Lanjut →' : 'Bayar Pelunasan' }}
+                                    {{ $payment->status === 'Menunggu pembayaran DP' ? 'Bayar DP' : 'Bayar pelunasan' }}
                                 </a>
+                            @endif
+                            @if($payment->status === 'Selesai' && $reservation->photo_status === 'siap' && $reservation->photo_delivery_url)
+                                <a href="{{ $reservation->photo_delivery_url }}" class="btn ink" target="_blank" rel="noopener noreferrer">Buka hasil foto</a>
                             @endif
                         </div>
                     </div>
+
+                    @if($reservation->testimonial)
+                        <div class="fc" style="margin-top: 20px; padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px;">
+                            <h3 style="margin-top: 0;">Testimoni Anda sudah diterima</h3>
+                            <div class="st">{{ str_repeat('★', $reservation->testimonial->rating) }}{{ str_repeat('☆', 5 - $reservation->testimonial->rating) }}</div>
+                            <p style="margin-bottom: 0;">{{ $reservation->testimonial->message }}</p>
+                        </div>
+                    @elseif($payment->canSubmitTestimonial())
+                        <div class="fc" style="margin-top: 20px; padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px;">
+                            <h3 style="margin-top: 0;">Bagikan pengalaman Anda</h3>
+                            <p class="note">Ceritakan pengalaman Anda kepada calon pelanggan lain.</p>
+                            <form action="{{ route('reservasi.testimoni.store') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="token" value="{{ $payment->token }}">
+
+                                <fieldset class="fld testimonial-rating">
+                                    <legend class="testimonial-rating__legend">Rating</legend>
+                                    <div class="testimonial-rating__stars" role="radiogroup" aria-label="Pilih rating">
+                                        @for($rating = 1; $rating <= 5; $rating++)
+                                            <input class="testimonial-rating__input" type="radio" id="rating-{{ $rating }}" name="rating" value="{{ $rating }}" required @checked((int) old('rating') === $rating)>
+                                            <label class="testimonial-rating__star" for="rating-{{ $rating }}" aria-label="{{ $rating }} bintang">
+                                                <span aria-hidden="true">★</span>
+                                            </label>
+                                        @endfor
+                                    </div>
+                                    <p class="testimonial-rating__hint">Pilih 1 sampai 5 bintang</p>
+                                </fieldset>
+
+                                <div class="fld" style="margin-bottom: 16px;">
+                                    <label for="testimonial-message" style="display: block; margin-bottom: 8px;">Testimoni</label>
+                                    <textarea id="testimonial-message" name="message" rows="4" minlength="10" maxlength="1000" required placeholder="Ceritakan pengalaman Anda (minimal 10 karakter)" style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; background: #fff; border-radius: 6px; font-family: inherit;">{{ old('message') }}</textarea>
+                                </div>
+
+                                <button type="submit" class="btn ink" style="background: #191512; color: #fff; padding: 12px 24px; border-radius: 30px; border: none; font-weight: 500; cursor: pointer;">
+                                    Kirim testimoni
+                                </button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>

@@ -29,4 +29,9 @@ class Payment extends Model
     {
         return $this->hasMany(PaymentHistory::class);
     }
+
+    public function canSubmitTestimonial(): bool
+    {
+        return $this->status === 'Selesai';
+    }
 }
