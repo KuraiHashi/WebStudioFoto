@@ -26,12 +26,13 @@ Route::get('/api/reservasi/booked-slots', [ReservasiController::class, 'getBooke
 Route::get('/reservasi/pembayaran', [ReservasiController::class, 'paymentPage'])->name('reservasi.pembayaran');
 Route::post('/reservasi/payment-history', [ReservasiController::class, 'storePaymentHistory'])->name('reservasi.payment.store');
 
-
 // ROUTE ADMIN
 
 // ROUTE ADMIN DASHBOARD & VERIFIKASI
 Route::get('/dashboard', [AdminsController::class, 'Dashboard'])->name('admin.dashboard');
 Route::put('/admin/reservasi/verify/{id}', [AdminsController::class, 'updateVerification'])->name('admin.reservasi.verify');
+Route::put('/admin/reservasi/{reservation}/session-complete', [AdminsController::class, 'completeSession'])->name('admin.reservasi.session-complete');
+Route::put('/admin/reservasi/{reservation}/photos', [AdminsController::class, 'updatePhotoWorkflow'])->name('admin.reservasi.photos');
 Route::get('/admin/api/schedule', [AdminsController::class, 'getSchedule'])->name('admin.api.schedule');
 Route::get('/admin/laporan', [AdminsController::class, 'laporan'])->name('admin.laporan');
 Route::put('/admin/reservasi/tagihan/{id}', [AdminsController::class, 'updateTagihan'])->name('admin.reservasi.tagihan');
@@ -60,7 +61,6 @@ Route::get('/fotografi', [AdminsController::class, 'fotografy'])->name('admin.fo
 Route::post('/fotografi', [AdminsController::class, 'storeFotografy'])->name('admin.fotografi.store');
 Route::put('/fotografi/{id}', [AdminsController::class, 'updateFotografy'])->name('admin.fotografi.update');
 Route::delete('/fotografi/{id}', [AdminsController::class, 'destroyFotografy'])->name('admin.fotografi.destroy');
-
 
 // Route::get('/', function () {
 //     return view('welcome');

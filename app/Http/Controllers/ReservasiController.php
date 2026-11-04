@@ -8,7 +8,12 @@ use App\Models\PhotographyPackage;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class ReservasiController extends Controller
 {
@@ -19,7 +24,6 @@ class ReservasiController extends Controller
     {
         $packages = PhotographyPackage::all();
         $selectedPackageId = $request->query('package_id');
-
 
         return view('reservasi.reservasi', compact('packages', 'selectedPackageId'));
     }
@@ -62,15 +66,15 @@ class ReservasiController extends Controller
         ]);
 
         // Auto-generate Token
-        $validated['token'] = 'RSV-' . strtoupper(Str::random(6));
+        $validated['token'] = 'RSV-'.strtoupper(Str::random(6));
 
         // 1. Ambil durasi paket yang dipilih (misal: "2 Jam" -> ambil angka 2)
         $package = PhotographyPackage::findOrFail($request->photography_package_id);
         preg_match('/\d+/', $package->duration, $matches);
-        $durationHours = isset($matches[0]) ? (int)$matches[0] : 2; // Default 2 jam jika tidak ketemu
+        $durationHours = isset($matches[0]) ? (int) $matches[0] : 2; // Default 2 jam jika tidak ketemu
 
         // Hitung waktu mulai dan waktu selesai reservasi baru
-        $newStart = strtotime($request->date . ' ' . $request->time);
+        $newStart = strtotime($request->date.' '.$request->time);
         $newEnd = $newStart + ($durationHours * 3600); // 3600 detik = 1 jam
 
         // 2. Cek apakah ada reservasi aktif pada tanggal yang sama yang jamnya beririsan
@@ -84,9 +88,9 @@ class ReservasiController extends Controller
         foreach ($conflictingReservations as $existing) {
             // Hitung durasi reservasi yang sudah ada di database
             preg_match('/\d+/', $existing->package->duration ?? '2', $matchExist);
-            $existDuration = isset($matchExist[0]) ? (int)$matchExist[0] : 2;
+            $existDuration = isset($matchExist[0]) ? (int) $matchExist[0] : 2;
 
-            $existStart = strtotime($existing->date . ' ' . $existing->time);
+            $existStart = strtotime($existing->date.' '.$existing->time);
             $existEnd = $existStart + ($existDuration * 3600);
 
             // Rumus deteksi bentrok waktu (Overlapping check)
@@ -113,8 +117,8 @@ class ReservasiController extends Controller
             'tagihan' => $package->price,
             'total_paid' => 0,
             'description' => $isConsultation
-                ? "Konsultasi & Paket: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")"
-                : "Harga Paket Dasar: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")",
+                ? "Konsultasi & Paket: {$package->name} (Rp ".number_format($package->price, 0, ',', '.').')'
+                : "Harga Paket Dasar: {$package->name} (Rp ".number_format($package->price, 0, ',', '.').')',
         ]);
 
         // WhatsApp formatting
@@ -122,7 +126,7 @@ class ReservasiController extends Controller
         $rawPhone = $studio ? $studio->phone : '081234567890';
         $adminPhone = preg_replace('/[^0-9]/', '', $rawPhone);
         if (str_starts_with($adminPhone, '0')) {
-            $adminPhone = '62' . substr($adminPhone, 1);
+            $adminPhone = '62'.substr($adminPhone, 1);
         }
 
         if ($isConsultation) {
@@ -131,29 +135,29 @@ class ReservasiController extends Controller
             $pesan = "Halo Admin, saya ingin mengkonfirmasi *RESERVASI* pemotretan:\n\n";
         }
 
-        $pesan .= "🔑 *Token Reservasi*: {$reservasi->token}\n" .
-            "👤 *Nama*: {$reservasi->name}\n" .
-            "📱 *No WhatsApp*: {$reservasi->whatsapp}\n" .
-            "📦 *Paket*: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")\n" .
-            "📅 *Tanggal*: {$reservasi->date}\n" .
-            "⏰ *Jam*: {$reservasi->time}\n" .
-            "⏱️ *Durasi*: {$reservasi->duration}\n" .
+        $pesan .= "🔑 *Token Reservasi*: {$reservasi->token}\n".
+            "👤 *Nama*: {$reservasi->name}\n".
+            "📱 *No WhatsApp*: {$reservasi->whatsapp}\n".
+            "📦 *Paket*: {$package->name} (Rp ".number_format($package->price, 0, ',', '.').")\n".
+            "📅 *Tanggal*: {$reservasi->date}\n".
+            "⏰ *Jam*: {$reservasi->time}\n".
+            "⏱️ *Durasi*: {$reservasi->duration}\n".
             "📍 *Lokasi*: {$reservasi->location}\n";
 
         if ($isConsultation) {
             $topicText = $request->consultation_topic;
             if ($topicText === 'Lainnya') {
-                $topicText = "Lainnya (" . ($request->consultation_custom_topic ?? '-') . ")";
+                $topicText = 'Lainnya ('.($request->consultation_custom_topic ?? '-').')';
             }
             $mediaText = $request->consultation_media;
             if ($mediaText === 'Offline') {
-                $mediaText = "Offline (Lokasi: " . ($request->consultation_offline_location ?? '-') . ")";
+                $mediaText = 'Offline (Lokasi: '.($request->consultation_offline_location ?? '-').')';
             }
 
-            $pesan .= "\n💬 *DETAIL KONSULTASI*:\n" .
-                "- Topik Utama: " . $topicText . "\n" .
-                "- Media Konsultasi: " . $mediaText . "\n" .
-                "- Catatan / Ide: " . ($request->consultation_notes ?? '-') . "\n";
+            $pesan .= "\n💬 *DETAIL KONSULTASI*:\n".
+                '- Topik Utama: '.$topicText."\n".
+                '- Media Konsultasi: '.$mediaText."\n".
+                '- Catatan / Ide: '.($request->consultation_notes ?? '-')."\n";
         }
 
         $pesan .= "\nMohon informasi selanjutnya untuk proses pembayaran. Terima kasih!";
@@ -165,7 +169,7 @@ class ReservasiController extends Controller
             'swal_success' => true,
             'token' => $reservasi->token,
             'whatsapp_url' => $whatsappUrl,
-            'is_consultation' => $isConsultation
+            'is_consultation' => $isConsultation,
         ]);
     }
 
@@ -186,7 +190,7 @@ class ReservasiController extends Controller
         $payment = null;
 
         if ($token) {
-            $payment = Payment::with(['reservation.package', 'histories'])
+            $payment = Payment::with(['reservation.package', 'reservation', 'histories'])
                 ->where('token', strtoupper(trim($token)))
                 ->first();
         }
@@ -204,7 +208,9 @@ class ReservasiController extends Controller
         $studio = StudioProfile::first();
 
         if ($token) {
-            $payment = Payment::with(['reservation.package'])->where('token', strtoupper(trim($token)))->first();
+            $payment = Payment::with(['reservation.package', 'reservation'])
+                ->where('token', strtoupper(trim($token)))
+                ->first();
         }
 
         return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio'));
@@ -215,52 +221,86 @@ class ReservasiController extends Controller
      */
     public function storePaymentHistory(Request $request)
     {
-        $request->validate([
-            'token' => 'required|exists:payments,token',
-            'amount' => 'required|numeric|min:1',
-            'payment_method' => 'required|string',
-            'receipt_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'notes' => 'nullable|string',
+        $validated = $request->validate([
+            'token' => ['required', 'exists:payments,token'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'payment_method' => ['required', Rule::in(['Transfer Bank', 'QRIS', 'Cash'])],
+            'receipt_photo' => ['required', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'notes' => ['nullable', 'string'],
         ]);
 
-        $payment = Payment::where('token', $request->token)->first();
+        $file = $request->file('receipt_photo');
+        $paymentToken = $validated['token'];
+        $receiptPath = null;
+        $amount = (float) $validated['amount'];
+        $isLunas = false;
 
-        if ($request->hasFile('receipt_photo')) {
-            $file = $request->file('receipt_photo');
-            $filename = time() . '_' . Str::random(5) . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/receipts'), $filename);
-            $receiptPath = 'uploads/receipts/' . $filename;
+        DB::transaction(function () use ($validated, $file, $paymentToken, $amount, &$isLunas, &$receiptPath): void {
+            $payment = Payment::where('token', $paymentToken)->lockForUpdate()->firstOrFail();
+            $reservation = $payment->reservation;
+
+            if ($payment->histories()->where('status', 'menunggu_verifikasi')->exists()) {
+                throw ValidationException::withMessages([
+                    'receipt_photo' => 'Bukti pembayaran sebelumnya masih menunggu pemeriksaan admin.',
+                ]);
+            }
+
+            $isDeposit = $payment->status === 'Menunggu pembayaran DP';
+            $isBalancePayment = $payment->status === 'Menunggu pelunasan'
+                && $reservation->session_completed_at !== null;
+
+            if (! $isDeposit && ! $isBalancePayment) {
+                throw ValidationException::withMessages([
+                    'token' => 'Pembayaran belum dapat dilakukan pada tahap reservasi saat ini.',
+                ]);
+            }
+
+            $remaining = max(0, (float) $payment->tagihan - (float) $payment->total_paid);
+
+            if ($amount > $remaining) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal pembayaran melebihi sisa tagihan.',
+                ]);
+            }
+
+            if ($isDeposit && $amount < (float) $payment->tagihan / 2) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Pembayaran DP minimal 50% dari total tagihan.',
+                ]);
+            }
+
+            if ($isBalancePayment && $amount < $remaining) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Pelunasan harus menutup seluruh sisa tagihan.',
+                ]);
+            }
+
+            $receiptPath = $file->storePublicly('receipts', 'public');
+            if ($receiptPath === false) {
+                throw new RuntimeException('Bukti pembayaran gagal disimpan.');
+            }
 
             PaymentHistory::create([
                 'payment_id' => $payment->id,
-                'amount' => $request->amount,
-                'payment_method' => $request->payment_method,
+                'amount' => $amount,
+                'payment_method' => $validated['payment_method'],
                 'receipt_photo' => $receiptPath,
-                'notes' => $request->notes,
+                'notes' => $validated['notes'] ?? null,
+                'status' => 'menunggu_verifikasi',
             ]);
 
-            $newTotalPaid = $payment->total_paid + $request->amount;
-            $isLunas = $newTotalPaid >= $payment->tagihan;
+            $payment->status = $isBalancePayment
+                ? 'Verifikasi pelunasan'
+                : 'Konfirmasi pembayaran';
+            $payment->save();
+            $isLunas = $payment->total_paid + $amount >= $payment->tagihan;
+        });
 
-            if ($payment->status === 'Menunggu pelunasan') {
-                $newStatus = 'Verifikasi pelunasan';
-            } else {
-                $newStatus = 'Konfirmasi pembayaran';
-            }
-
-            $payment->update([
-                'total_paid' => $newTotalPaid,
-                'status' => $newStatus,
-            ]);
-
-            return redirect()->route('reservasi.pembayaran', ['token' => $payment->token])->with([
-                'swal_payment_success' => true,
-                'paid_amount' => $request->amount,
-                'is_lunas' => $isLunas,
-                'token_reservasi' => $payment->token,
-            ]);
-        }
-
-        return redirect()->back()->withErrors('Gagal mengunggah bukti pembayaran.');
+        return redirect()->route('reservasi.pembayaran', ['token' => $paymentToken])->with([
+            'swal_payment_success' => true,
+            'paid_amount' => $amount,
+            'is_lunas' => $isLunas,
+            'token_reservasi' => $paymentToken,
+        ]);
     }
 }

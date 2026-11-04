@@ -47,7 +47,6 @@
                         <i>Sisa Kekurangan</i><span style="font-weight: bold; color: #d9534f;">Rp {{ number_format(max(0, $payment->tagihan - $payment->total_paid), 0, ',', '.') }}</span>
                     </div>
 
-                    {{-- CEK APAKAH MASIH DALAM TAHAP KONSULTASI --}}
                     @if ($payment->status === 'Masa konsultasi')
                         <div style="background: #fff8e1; border: 1px solid #ffe082; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px;">
                             <h4 style="color: #f57f17; margin-top: 0; font-size: 16px;">💬 Reservasi Anda Sedang dalam Masa Konsultasi</h4>
@@ -58,8 +57,23 @@
                                 ← Kembali ke Cek Status
                             </a>
                         </div>
+                    @elseif ($payment->status === 'Menunggu pelunasan' && !$payment->reservation->session_completed_at)
+                        <div class="note" style="padding: 18px; background: #f3ede3; border-radius: 8px;">
+                            DP sudah diverifikasi. Form pelunasan akan tersedia setelah sesi pemotretan selesai dan ditandai admin.
+                        </div>
+                    @elseif (in_array($payment->status, ['Konfirmasi pembayaran', 'Verifikasi pelunasan'], true))
+                        <div class="note" style="padding: 18px; background: #f3ede3; border-radius: 8px;">
+                            Bukti pembayaran sedang diperiksa admin. Mohon tunggu hasil verifikasi sebelum mengirim pembayaran berikutnya.
+                        </div>
+                    @elseif ($payment->status === 'Selesai')
+                        <div class="note" style="padding: 18px; background: #f3ede3; border-radius: 8px;">
+                            Pembayaran sudah lunas. @if($payment->reservation->session_completed_at) Hasil foto akan tersedia setelah selesai diproses studio. @else Silakan datang sesuai jadwal pemotretan. @endif
+                        </div>
+                    @elseif ($payment->status === 'Dibatalkan')
+                        <div class="note" style="padding: 18px; background: #f3ede3; border-radius: 8px;">
+                            Reservasi ini dibatalkan sehingga pembayaran baru tidak dapat dikirim.
+                        </div>
                     @else
-                        {{-- FORM PEMBAYARAN JIKA KONSULTASI SUDAH SELESAI / TANPA KONSULTASI --}}
                         <form action="{{ route('reservasi.payment.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="token" value="{{ $payment->token }}">
@@ -96,19 +110,26 @@
                                 <span style="font-size: 12px; color: #666;">Dapat di-scan dengan seluruh aplikasi e-Wallet & Mobile Banking</span>
                             </div>
 
+                            <div id="cash_details_container" style="display: none; margin-bottom: 20px; padding: 16px; background: #f3ede3; border: 1px solid #d1c7bd; border-radius: 6px;">
+                                <h4 style="margin-top: 0; font-size: 15px; color: #191512;">Pembayaran tunai di studio</h4>
+                                <p style="margin: 0; color: #555; font-size: 13px;">Bayar langsung kepada admin studio, lalu unggah foto tanda terima yang diberikan.</p>
+                            </div>
+
                             <div class="fld" style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; letter-spacing: 1px; color: #8c8275;">NOMINAL YANG DIBAYARKAN (RP)</label>
-                                <input type="number" name="amount" placeholder="Cth: 500000" required
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; letter-spacing: 1px; color: #8c8275;">
+                                    {{ $payment->status === 'Menunggu pembayaran DP' ? 'NOMINAL DP (MINIMAL 50%)' : 'NOMINAL PELUNASAN' }} (RP)
+                                </label>
+                                <input type="number" name="amount" min="{{ $payment->status === 'Menunggu pembayaran DP' ? $payment->tagihan / 2 : max(0, $payment->tagihan - $payment->total_paid) }}" max="{{ max(0, $payment->tagihan - $payment->total_paid) }}" step="0.01" placeholder="Masukkan nominal pembayaran" required
                                     style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; background: #fff; border-radius: 6px; font-family: inherit;"
-                                    value="{{ max(0, $payment->tagihan - $payment->total_paid) }}">
+                                    value="{{ $payment->status === 'Menunggu pembayaran DP' ? max($payment->tagihan / 2, $payment->tagihan - $payment->total_paid) : max(0, $payment->tagihan - $payment->total_paid) }}">
                             </div>
 
                             <div class="fld" id="receipt_container" style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; letter-spacing: 1px; color: #8c8275;">BUKTI TRANSFER / FOTO KWITANSI</label>
                                 <label class="drop" style="display: block; border: 2px dashed #d1c7bd; padding: 20px; text-align: center; cursor: pointer; border-radius: 6px; background: #fff;">
-                                    <span id="file-label-text" style="font-size: 14px; color: #444;">Ketuk untuk memilih file bukti transfer</span><br />
-                                    <span style="font-size: 11px; color: #777;">JPG / PNG / PDF · maks. 2 MB</span>
-                                    <input type="file" name="receipt_photo" id="receipt_photo" accept=".jpg,.jpeg,.png,.pdf,image/*" required style="display: none;"
+                                    <span id="file-label-text" style="font-size: 14px; color: #444;">Ketuk untuk memilih foto bukti pembayaran</span><br />
+                                    <span style="font-size: 11px; color: #777;">JPG / PNG · maks. 2 MB (foto struk untuk pembayaran tunai)</span>
+                                    <input type="file" name="receipt_photo" id="receipt_photo" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required style="display: none;"
                                         onchange="document.getElementById('file-label-text').innerText = this.files[0].name;" />
                                 </label>
                             </div>
@@ -137,19 +158,18 @@
             const method = document.getElementById('payment_method').value;
             const bankBox = document.getElementById('bank_details_container');
             const qrisBox = document.getElementById('qris_details_container');
-            const receiptInput = document.getElementById('receipt_photo');
+            const cashBox = document.getElementById('cash_details_container');
 
             if(bankBox) bankBox.style.display = 'none';
             if(qrisBox) qrisBox.style.display = 'none';
+            if(cashBox) cashBox.style.display = 'none';
 
             if (method === 'Transfer Bank' && bankBox) {
                 bankBox.style.display = 'block';
-                if(receiptInput) receiptInput.required = true;
             } else if (method === 'QRIS' && qrisBox) {
                 qrisBox.style.display = 'block';
-                if(receiptInput) receiptInput.required = true;
-            } else if (method === 'Cash' && receiptInput) {
-                receiptInput.required = false;
+            } else if (method === 'Cash' && cashBox) {
+                cashBox.style.display = 'block';
             }
         }
     </script>
