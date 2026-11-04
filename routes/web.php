@@ -5,6 +5,7 @@ use App\Http\Controllers\GaleriController;
 use App\Http\Controllers\PaketFotografiController;
 use App\Http\Controllers\RekeningController;
 use App\Http\Controllers\ReservasiController;
+use App\Http\Controllers\TestimonialController;
 use Illuminate\Support\Facades\Route;
 
 // USER VIEW
@@ -19,6 +20,7 @@ Route::post('/reservasi', [ReservasiController::class, 'store'])->name('reservas
 // Halaman Cek Status Reservasi (Sesuai referensi 1)
 Route::get('/reservasi/cek', [ReservasiController::class, 'checkStatusForm'])->name('reservasi.cek');
 Route::get('/reservasi/result', [ReservasiController::class, 'checkStatus'])->name('reservasi.result');
+Route::post('/reservasi/testimoni', [TestimonialController::class, 'store'])->name('reservasi.testimoni.store');
 // CEK JADWAL RESERVASI
 Route::get('/api/reservasi/booked-slots', [ReservasiController::class, 'getBookedSchedules'])->name('reservasi.booked-slots');
 

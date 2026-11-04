@@ -19,6 +19,12 @@
                 </div>
             @endif
 
+            @if(session('testimonial_success'))
+                <div class="alert alert-success" style="margin-bottom: 20px; padding: 12px; background: #d4edda; color: #155724; border-radius: 4px;">
+                    {{ session('testimonial_success') }}
+                </div>
+            @endif
+
             <!-- Form Input Token -->
             <form action="{{ route('reservasi.result') }}" method="GET">
                 <div class="fc" style="padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px; margin-top: 20px;">
@@ -47,6 +53,15 @@
             @endif
 
             @if(isset($payment) && $payment)
+                @if($errors->any())
+                    <div class="alert alert-danger" style="margin-top: 24px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 4px;">
+                        <ul style="margin: 0; padding-left: 18px;">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 @php
                     $reservation = $payment->reservation;
                     $canPay = $payment->status === 'Menunggu pembayaran DP'
@@ -115,6 +130,45 @@
                             @endif
                         </div>
                     </div>
+
+                    @if($reservation->testimonial)
+                        <div class="fc" style="margin-top: 20px; padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px;">
+                            <h3 style="margin-top: 0;">Testimoni Anda sudah diterima</h3>
+                            <div class="st">{{ str_repeat('★', $reservation->testimonial->rating) }}{{ str_repeat('☆', 5 - $reservation->testimonial->rating) }}</div>
+                            <p style="margin-bottom: 0;">{{ $reservation->testimonial->message }}</p>
+                        </div>
+                    @elseif($payment->canSubmitTestimonial())
+                        <div class="fc" style="margin-top: 20px; padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px;">
+                            <h3 style="margin-top: 0;">Bagikan pengalaman Anda</h3>
+                            <p class="note">Ceritakan pengalaman Anda kepada calon pelanggan lain.</p>
+                            <form action="{{ route('reservasi.testimoni.store') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="token" value="{{ $payment->token }}">
+
+                                <fieldset class="fld testimonial-rating">
+                                    <legend class="testimonial-rating__legend">Rating</legend>
+                                    <div class="testimonial-rating__stars" role="radiogroup" aria-label="Pilih rating">
+                                        @for($rating = 1; $rating <= 5; $rating++)
+                                            <input class="testimonial-rating__input" type="radio" id="rating-{{ $rating }}" name="rating" value="{{ $rating }}" required @checked((int) old('rating') === $rating)>
+                                            <label class="testimonial-rating__star" for="rating-{{ $rating }}" aria-label="{{ $rating }} bintang">
+                                                <span aria-hidden="true">★</span>
+                                            </label>
+                                        @endfor
+                                    </div>
+                                    <p class="testimonial-rating__hint">Pilih 1 sampai 5 bintang</p>
+                                </fieldset>
+
+                                <div class="fld" style="margin-bottom: 16px;">
+                                    <label for="testimonial-message" style="display: block; margin-bottom: 8px;">Testimoni</label>
+                                    <textarea id="testimonial-message" name="message" rows="4" minlength="10" maxlength="1000" required placeholder="Ceritakan pengalaman Anda (minimal 10 karakter)" style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; background: #fff; border-radius: 6px; font-family: inherit;">{{ old('message') }}</textarea>
+                                </div>
+
+                                <button type="submit" class="btn ink" style="background: #191512; color: #fff; padding: 12px 24px; border-radius: 30px; border: none; font-weight: 500; cursor: pointer;">
+                                    Kirim testimoni
+                                </button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>

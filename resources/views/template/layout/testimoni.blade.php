@@ -5,23 +5,25 @@
         </div>
         <div class="tq rv">
             <div>
-                <div class="st">★★★★★</div>
-                <blockquote>“Suasananya tenang, hasilnya melebihi bayangan kami. Setiap foto terasa seperti kami
-                    yang sebenarnya.”</blockquote>
-                <p class="note" style="margin-top:18px">— Nama Pelanggan</p>
+                @if($testimonials->isNotEmpty())
+                    @php($featuredTestimonial = $testimonials->first())
+                    <div class="st">{{ str_repeat('★', $featuredTestimonial->rating) }}{{ str_repeat('☆', 5 - $featuredTestimonial->rating) }}</div>
+                    <blockquote>“{{ $featuredTestimonial->message }}”</blockquote>
+                    <p class="note" style="margin-top:18px">— Pelanggan terverifikasi</p>
+                @else
+                    <blockquote>Belum ada testimoni. Jadilah pelanggan pertama yang berbagi pengalaman.</blockquote>
+                @endif
             </div>
             <div>
-                <div class="sq">
-                    <div class="st" style="margin:0 0 6px">★★★★★</div>“Proses reservasi dan pembayaran sangat
-                    jelas.”<div class="note">— Nama Pelanggan</div>
-                </div>
-                <div class="sq">
-                    <div class="st" style="margin:0 0 6px">★★★★☆</div>“Galeri privatnya praktis, mudah
-                    diunduh.”<div class="note">— Nama Pelanggan</div>
-                </div>
-                <a class="btn sm" style="margin-top:10px" href="cek.html">Tulis testimoni</a>
-                <p class="note" style="margin-top:8px">Testimoni dapat diisi setelah sesi selesai, lewat menu
-                    Cek Reservasi.</p>
+                @foreach($testimonials->skip(1) as $testimonial)
+                    <div class="sq">
+                        <div class="st" style="margin:0 0 6px">{{ str_repeat('★', $testimonial->rating) }}{{ str_repeat('☆', 5 - $testimonial->rating) }}</div>
+                        “{{ $testimonial->message }}”
+                        <div class="note">— Pelanggan terverifikasi</div>
+                    </div>
+                @endforeach
+                <a class="btn sm" style="margin-top:10px" href="{{ route('reservasi.cek') }}">Tulis testimoni</a>
+                <p class="note" style="margin-top:8px">Masukkan kode reservasi di menu Cek Reservasi setelah status reservasi Selesai.</p>
             </div>
         </div>
     </div>
