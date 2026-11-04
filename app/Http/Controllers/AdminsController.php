@@ -573,19 +573,29 @@ class AdminsController extends Controller
             'price' => 'required|numeric',
             'duration' => 'required|string',
             'facilities' => 'required|string',
+            'photos.*' => 'nullable|image|mimes:jpg,jpeg,png|max:5120', // Validasi file foto opsional/jamak
         ]);
 
-        // Mengambil nilai is_wedding (jika dicentang bernilai 1, jika tidak bernilai 0)
         $isWedding = $request->has('is_wedding') ? 1 : 0;
+        
+        $photoPaths = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                // Menyimpan ke storage/app/public/packages (atau direktori pilihan Anda)
+                $path = $file->store('packages', 'public');
+                $photoPaths[] = $path;
+            }
+        }
 
         PhotographyPackage::create([
             'name' => $request->name,
-            'is_wedding' => $isWedding, // <-- Simpan ke database
+            'is_wedding' => $isWedding,
             'price' => $request->price,
             'duration' => $request->duration,
             'facilities' => $request->facilities,
             'description' => $request->description,
             'bonus' => $request->bonus,
+            'photos' => !empty($photoPaths) ? $photoPaths : null, // Disimpan otomatis sebagai JSON berkat $casts di Model
         ]);
 
         return redirect()->back()->with('success', 'Paket fotografi berhasil ditambahkan.');
@@ -598,21 +608,32 @@ class AdminsController extends Controller
             'price' => 'required|numeric',
             'duration' => 'required|string',
             'facilities' => 'required|string',
+            'photos.*' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
         $paket = PhotographyPackage::findOrFail($id);
-
-        // Cek apakah checkbox di-centang saat update
         $isWedding = $request->has('is_wedding') ? 1 : 0;
+
+        // Ambil foto lama yang sudah ada di database (jika ada)
+        $photoPaths = $paket->photos ?? [];
+
+        // Jika ada unggahan foto baru
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                $path = $file->store('packages', 'public');
+                $photoPaths[] = $path;
+            }
+        }
 
         $paket->update([
             'name' => $request->name,
-            'is_wedding' => $isWedding, // <-- Perbarui data di database
+            'is_wedding' => $isWedding,
             'price' => $request->price,
             'duration' => $request->duration,
             'facilities' => $request->facilities,
             'description' => $request->description,
             'bonus' => $request->bonus,
+            'photos' => !empty($photoPaths) ? $photoPaths : null,
         ]);
 
         return redirect()->back()->with('success', 'Paket fotografi berhasil diperbarui.');

@@ -7,6 +7,7 @@ use App\Models\PaymentHistory;
 use App\Models\PhotographyPackage;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
+use App\Models\Rekening;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -75,8 +76,9 @@ class ReservasiController extends Controller
         // Auto-generate Token
         $validated['token'] = 'RSV-'.strtoupper(Str::random(6));
 
-        // 1. Ambil durasi paket yang dipilih (misal: "2 Jam" -> ambil angka 2)
+        // 1. Ambil data paket yang dipilih (menggunakan variabel $package)
         $package = PhotographyPackage::findOrFail($request->photography_package_id);
+        
         preg_match('/\d+/', $package->duration, $matches);
         $durationHours = isset($matches[0]) ? (int) $matches[0] : 2; // Default 2 jam jika tidak ketemu
 
@@ -85,14 +87,14 @@ class ReservasiController extends Controller
         $newEnd = $newStart + ($durationHours * 3600); // 3600 detik = 1 jam
 
         // 2. Cek apakah ada reservasi aktif pada tanggal yang sama yang jamnya beririsan
-        $conflictingReservations = Reservation::where('date', $request->date)
+        $existingReservations = Reservation::where('date', $request->date)
             ->whereHas('payment', function ($q) {
                 $q->where('status', '!=', 'Dibatalkan');
             })
             ->with('package')
             ->get();
 
-        foreach ($conflictingReservations as $existing) {
+        foreach ($existingReservations as $existing) {
             // Hitung durasi reservasi yang sudah ada di database
             preg_match('/\d+/', $existing->package->duration ?? '2', $matchExist);
             $existDuration = isset($matchExist[0]) ? (int) $matchExist[0] : 2;
@@ -100,8 +102,8 @@ class ReservasiController extends Controller
             $existStart = strtotime($existing->date.' '.$existing->time);
             $existEnd = $existStart + ($existDuration * 3600);
 
-            // Rumus deteksi bentrok waktu (Overlapping check)
-            if ($newStart < $existEnd && $newEnd > $existStart) {
+            // Jika di tanggal tersebut sudah ada Paket Wedding, tolak semua reservasi lain
+            if ($existing->package->is_wedding ?? false) {
                 return redirect()->back()
                     ->withInput()
                     ->withErrors(['date' => 'Maaf, tanggal tersebut sudah dibooking penuh untuk acara Wedding. Tanggal tertutup untuk semua reservasi.']);
@@ -109,7 +111,7 @@ class ReservasiController extends Controller
 
             // ATURAN 2: Jika user saat ini ingin membooking Paket Wedding, 
             // tapi di tanggal tersebut sudah ada reservasi paket reguler lain, tolak.
-            if ($newPackage->is_wedding) {
+            if ($package->is_wedding) {
                 return redirect()->back()
                     ->withInput()
                     ->withErrors(['date' => 'Maaf, tanggal tersebut sudah memiliki jadwal pemotretan lain. Paket Wedding memerlukan tanggal yang sepenuhnya kosong.']);
@@ -117,16 +119,12 @@ class ReservasiController extends Controller
         }
 
         // ATURAN 3: Jika sama-sama paket reguler (non-wedding), cek bentrok jam (overlapping) berdasarkan durasi
-        if (!$newPackage->is_wedding) {
-            preg_match('/\d+/', $newPackage->duration, $matchNew);
+        if (!$package->is_wedding) {
+            preg_match('/\d+/', $package->duration, $matchNew);
             $newHours = isset($matchNew[0]) ? (int)$matchNew[0] : 1;
             
-            // Konversi waktu baru (pastikan format jam digabung tanggal dengan benar)
             $newStart = strtotime($request->date . ' ' . $request->time);
             $newEnd = $newStart + ($newHours * 3600);
-
-            // LOGGING untuk debugging di laravel.log
-            \Illuminate\Support\Facades\Log::info("Mencoba Booking: {$request->date} jam {$request->time} (Start: $newStart, End: $newEnd)");
 
             foreach ($existingReservations as $exist) {
                 if ($exist->package->is_wedding ?? false) continue;
@@ -137,12 +135,8 @@ class ReservasiController extends Controller
                 $existStart = strtotime($exist->date . ' ' . $exist->time);
                 $existEnd = $existStart + ($existHours * 3600);
 
-                \Illuminate\Support\Facades\Log::info("Membandingkan dengan Eksisting: {$exist->date} jam {$exist->time} (Start: $existStart, End: $existEnd)");
-
                 // Rumus irisan waktu (Overlapping check)
                 if ($newStart < $existEnd && $newEnd > $existStart) {
-                    \Illuminate\Support\Facades\Log::warning("BENTROK TERDETEKSI! Menolak reservasi.");
-                    
                     return redirect()->back()
                         ->withInput()
                         ->withErrors(['time' => 'Maaf, jam pemotretan (' . $request->time . ') bentrok dengan jadwal lain yang sudah ada di hari ini (' . $exist->time . ' - durasi ' . $exist->package->duration . '). Silakan pilih jam lain.']);
@@ -156,12 +150,12 @@ class ReservasiController extends Controller
         $isConsultation = $request->has('request_consultation') && $request->request_consultation == 1;
         $initialStatus = $isConsultation ? 'Masa konsultasi' : 'Menunggu pembayaran DP';
 
-        // Inisialisasi data pembayaran
+        // Inisialisasi data pembayaran (menggunakan $package->price)
         Payment::create([
             'reservation_id' => $reservasi->id,
             'token' => $reservasi->token,
             'status' => $initialStatus,
-            'tagihan' => $newPackage->price,
+            'tagihan' => $package->price,
             'total_paid' => 0,
             'description' => $isConsultation
                 ? "Konsultasi & Paket: {$package->name} (Rp ".number_format($package->price, 0, ',', '.').')'
@@ -251,9 +245,11 @@ class ReservasiController extends Controller
         $token = $request->query('token');
         $payment = null;
         $studio = StudioProfile::first();
-
-        // Ambil daftar rekening aktif dari database
-        $rekenings = Rekening::all(); // Atau Rekening::where('is_active', true)->get() jika ada kolom status aktif
+        
+        $rekenings = Rekening::all();
+        
+        // Ambil data rekening yang nama bank-nya mengandung kata 'QRIS'
+        $qrisData = Rekening::where('nama_bank', 'LIKE', '%QRIS%')->first();
 
         if ($token) {
             $payment = Payment::with(['reservation.package', 'reservation'])
@@ -261,8 +257,7 @@ class ReservasiController extends Controller
                 ->first();
         }
 
-        // Kirim $rekenings ke view detailPembayaran
-        return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio', 'rekenings'));
+        return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio', 'rekenings', 'qrisData'));
     }
 
     /**
@@ -274,6 +269,7 @@ class ReservasiController extends Controller
             'token' => ['required', 'exists:payments,token'],
             'amount' => ['required', 'numeric', 'min:1'],
             'payment_method' => ['required', Rule::in(['Transfer Bank', 'QRIS', 'Cash'])],
+            'rekening_id' => ['nullable', 'exists:rekening,id'],
             'receipt_photo' => ['required', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -284,71 +280,71 @@ class ReservasiController extends Controller
         $amount = (float) $validated['amount'];
         $isLunas = false;
 
-        DB::transaction(function () use ($validated, $file, $paymentToken, $amount, &$isLunas, &$receiptPath): void {
-            $payment = Payment::where('token', $paymentToken)->lockForUpdate()->firstOrFail();
-            $reservation = $payment->reservation;
+        $receiptPath = $file->storePublicly('receipts', 'public');
+        if ($receiptPath === false) {
+            throw new RuntimeException('Bukti pembayaran gagal disimpan.');
+        }
 
-            if ($payment->histories()->where('status', 'menunggu_verifikasi')->exists()) {
-                throw ValidationException::withMessages([
-                    'receipt_photo' => 'Bukti pembayaran sebelumnya masih menunggu pemeriksaan admin.',
+        try {
+            DB::transaction(function () use ($validated, $paymentToken, $amount, $receiptPath, &$isLunas): void {
+                $payment = Payment::where('token', $paymentToken)->lockForUpdate()->firstOrFail();
+                $reservation = $payment->reservation;
+
+                if ($payment->histories()->where('status', 'menunggu_verifikasi')->exists()) {
+                    throw ValidationException::withMessages([
+                        'receipt_photo' => 'Bukti pembayaran sebelumnya masih menunggu pemeriksaan admin.',
+                    ]);
+                }
+
+                $isDeposit = $payment->status === 'Menunggu pembayaran DP';
+                $isBalancePayment = $payment->status === 'Menunggu pelunasan'
+                    && $reservation->session_completed_at !== null;
+
+                if (! $isDeposit && ! $isBalancePayment) {
+                    throw ValidationException::withMessages([
+                        'token' => 'Pembayaran belum dapat dilakukan pada tahap reservasi saat ini.',
+                    ]);
+                }
+
+                $remaining = max(0, (float) $payment->tagihan - (float) $payment->total_paid);
+
+                if ($amount > $remaining) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Nominal pembayaran melebihi sisa tagihan.',
+                    ]);
+                }
+
+                if ($isDeposit && $amount < (float) $payment->tagihan / 2) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Pembayaran DP minimal 50% dari total tagihan.',
+                    ]);
+                }
+
+                PaymentHistory::create([
+                    'payment_id' => $payment->id,
+                    'rekening_id' => $validated['rekening_id'] ?? null,
+                    'amount' => $amount,
+                    'payment_method' => $validated['payment_method'],
+                    'receipt_photo' => $receiptPath,
+                    'notes' => $validated['notes'] ?? null,
+                    'status' => 'menunggu_verifikasi',
                 ]);
+
+                $payment->status = $isBalancePayment
+                    ? 'Verifikasi pelunasan'
+                    : 'Konfirmasi pembayaran';
+                $payment->save();
+            });
+        } catch (\Throwable $e) {
+            if ($receiptPath && Storage::disk('public')->exists($receiptPath)) {
+                Storage::disk('public')->delete($receiptPath);
             }
-
-            $isDeposit = $payment->status === 'Menunggu pembayaran DP';
-            $isBalancePayment = $payment->status === 'Menunggu pelunasan'
-                && $reservation->session_completed_at !== null;
-
-            if (! $isDeposit && ! $isBalancePayment) {
-                throw ValidationException::withMessages([
-                    'token' => 'Pembayaran belum dapat dilakukan pada tahap reservasi saat ini.',
-                ]);
-            }
-
-            $remaining = max(0, (float) $payment->tagihan - (float) $payment->total_paid);
-
-            if ($amount > $remaining) {
-                throw ValidationException::withMessages([
-                    'amount' => 'Nominal pembayaran melebihi sisa tagihan.',
-                ]);
-            }
-
-            if ($isDeposit && $amount < (float) $payment->tagihan / 2) {
-                throw ValidationException::withMessages([
-                    'amount' => 'Pembayaran DP minimal 50% dari total tagihan.',
-                ]);
-            }
-
-            if ($isBalancePayment && $amount < $remaining) {
-                throw ValidationException::withMessages([
-                    'amount' => 'Pelunasan harus menutup seluruh sisa tagihan.',
-                ]);
-            }
-
-            $receiptPath = $file->storePublicly('receipts', 'public');
-            if ($receiptPath === false) {
-                throw new RuntimeException('Bukti pembayaran gagal disimpan.');
-            }
-
-            PaymentHistory::create([
-                'payment_id' => $payment->id,
-                'amount' => $amount,
-                'payment_method' => $validated['payment_method'],
-                'receipt_photo' => $receiptPath,
-                'notes' => $validated['notes'] ?? null,
-                'status' => 'menunggu_verifikasi',
-            ]);
-
-            $payment->status = $isBalancePayment
-                ? 'Verifikasi pelunasan'
-                : 'Konfirmasi pembayaran';
-            $payment->save();
-            $isLunas = $payment->total_paid + $amount >= $payment->tagihan;
-        });
+            throw $e;
+        }
 
         return redirect()->route('reservasi.pembayaran', ['token' => $paymentToken])->with([
             'swal_payment_success' => true,
             'paid_amount' => $amount,
-            'is_lunas' => $isLunas,
             'token_reservasi' => $paymentToken,
         ]);
     }
