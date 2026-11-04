@@ -1,7 +1,8 @@
 @extends('template.main')
 
 @section('konten_detail')
-    <main class="pg" style="background: #F3EDE3;
+    <main class="pg"
+        style="background: #F3EDE3;
     background: linear-gradient(180deg, rgba(37, 35, 31, 1) 80px, #F3EDE3 80px);">
         <div class="wrap">
             <div class="crumb">
@@ -31,12 +32,13 @@
                     </div>
 
                     <!-- List Thumbnail Foto di Bawah -->
-                    @if(is_array($photos) && count($photos) > 1)
-                        <div class="photo-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
-                            @foreach($photos as $index => $photo)
-                                <div class="thumb-item {{ $index === 0 ? 'active' : '' }}" 
-                                     onclick="changeMainPhoto('{{ asset('storage/' . $photo) }}', this)"
-                                     style="
+                    @if (is_array($photos) && count($photos) > 1)
+                        <div class="photo-thumbnails"
+                            style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
+                            @foreach ($photos as $index => $photo)
+                                <div class="thumb-item {{ $index === 0 ? 'active' : '' }}"
+                                    onclick="changeMainPhoto('{{ asset('storage/' . $photo) }}', this)"
+                                    style="
                                      width: 70px; 
                                      height: 70px; 
                                      border-radius: 8px; 
@@ -68,8 +70,11 @@
                         <i>Bonus</i><span>{{ $package->bonus ?? '-' }}</span>
                     </div>
                     <div class="acts">
-                        <a class="btn ink" href="#">Reservasi paket ini</a>
-                        <a class="btn" href="/">Kembali</a>
+                        <!-- Pastikan route mengarah ke 'reservasi.index' dan mengirimkan parameter package_id -->
+                        <a class="btn ink" href="{{ route('reservasi.index', ['package_id' => $package->id]) }}">
+                            Reservasi paket ini
+                        </a>
+                        <a class="btn" href="{{ url('/#paket') }}">Kembali</a>
                     </div>
                 </div>
             </div>
@@ -92,7 +97,7 @@
         function changeMainPhoto(imageSrc, element) {
             // Ubah background foto utama
             document.getElementById('mainPhoto').style.backgroundImage = `url('${imageSrc}')`;
-            
+
             // Atur efek aktif (border) pada thumbnail
             const thumbnails = document.querySelectorAll('.thumb-item');
             thumbnails.forEach(thumb => {
