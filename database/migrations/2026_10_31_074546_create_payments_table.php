@@ -17,6 +17,7 @@ return new class extends Migration {
 
             // Status pembayaran
             $table->enum('status', [
+                'Masa konsultasi',
                 'Menunggu pembayaran DP',
                 'Konfirmasi pembayaran',
                 'Menunggu pelunasan',

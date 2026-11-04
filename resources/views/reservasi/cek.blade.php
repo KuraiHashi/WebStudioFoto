@@ -1,7 +1,8 @@
 @extends('template.main')
 
 @section('konten_detail')
-    <main class="pg">
+    <main class="pg" style="background: #F3EDE3;
+    background: linear-gradient(180deg, rgba(37, 35, 31, 1) 80px, #F3EDE3 80px);">
         <div class="wrap" style="max-width: 880px">
             <div class="crumb">
                 <a href="{{ route('reservasi.index') }}">Beranda</a> / Cek Reservasi

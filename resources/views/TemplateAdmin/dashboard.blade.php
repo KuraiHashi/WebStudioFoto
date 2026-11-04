@@ -1,5 +1,17 @@
 @extends('TemplateAdmin.main')
 @section('dashboard', 'on')
+
+@push('styles')
+<style>
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.cal-day { padding: 10px 0; background: #f8f9fa; border-radius: 6px; font-size: 14px; font-weight: 500; color: #333; }
+.cal-day.empty { background: transparent; }
+.cal-day.booked { background: #e74c3c !important; color: #fff !important; font-weight: bold; }
+.cl { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.cl button { background: #f1f1f1; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; }
+</style>
+@endpush
+
 @section('konten')
     <main class="main">
         <div class="top">
@@ -7,127 +19,183 @@
                 <div class="eyebrow">Dashboard</div>
                 <h2 style="margin-top:12px">Selamat datang, <em>Admin</em></h2>
             </div>
-            <a class="btn sm" href="laporan.html">Lihat laporan</a>
+            <a class="btn sm" href="{{ route('admin.laporan') }}">Lihat laporan</a>
         </div>
-        <div class="kp" id="kp"></div>
+        
+        <!-- Kotak Ringkasan Statistik (KP) Menggunakan Data Server -->
+        <div class="kp" id="kp">
+            <div class="card">
+                <div class="eyebrow">RESERVASI BARU</div>
+                <h2 style="margin-top:8px">{{ str_pad($reservasiBaru, 2, '0', STR_PAD_LEFT) }}</h2>
+            </div>
+            <div class="card">
+                <div class="eyebrow">MENUNGGU VERIFIKASI</div>
+                <h2 style="margin-top:8px">{{ str_pad($menungguVerifikasi, 2, '0', STR_PAD_LEFT) }}</h2>
+            </div>
+            <div class="card">
+                <div class="eyebrow">TOTAL RESERVASI</div>
+                <h2 style="margin-top:8px">{{ str_pad($total, 2, '0', STR_PAD_LEFT) }}</h2>
+            </div>
+            <div class="card">
+                <div class="eyebrow">LUNAS / SELESAI</div>
+                <h2 style="margin-top:8px">{{ str_pad($lunasSelesai, 2, '0', STR_PAD_LEFT) }}</h2>
+            </div>
+        </div>
+
         <div class="cols">
             <div class="card">
                 <h3>Kelola reservasi &amp; pembayaran</h3>
-                <div class="flt" style="margin-bottom:12px">
-                    <div class="fld" style="margin:0"><label>Cari nama / kode</label>
-                        <input id="fq" placeholder="Ketik untuk mencari…">
+                
+                <!-- Form Filter & Pencarian menggunakan GET -->
+                <form method="GET" action="{{ route('admin.dashboard') }}" class="flt" style="margin-bottom:12px">
+                    <div class="fld" style="margin:0">
+                        <label>Cari nama / kode</label>
+                        <input type="text" name="q" value="{{ request('q') }}" placeholder="Ketik untuk mencari…">
                     </div>
                     <div class="fld" style="margin:0">
                         <label>Status</label>
-                        <select id="fs">
-                            <option value="">Semua</option>
-                            <option value="KONSULTASI">Konsultasi</option>
-                            <option value="DP">DP (Menunggu Pelunasan)</option>
-                            <option value="LUNAS">Lunas / Selesai</option>
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="">Semua Status</option>
+                            <option value="Masa konsultasi" {{ request('status') == 'Masa konsultasi' ? 'selected' : '' }}>Masa Konsultasi</option>
+                            <option value="Menunggu pembayaran DP" {{ request('status') == 'Menunggu pembayaran DP' ? 'selected' : '' }}>Menunggu Pembayaran DP</option>
+                            <option value="Konfirmasi pembayaran" {{ request('status') == 'Konfirmasi pembayaran' ? 'selected' : '' }}>Konfirmasi Pembayaran</option>
+                            <option value="Menunggu pelunasan" {{ request('status') == 'Menunggu pelunasan' ? 'selected' : '' }}>Menunggu Pelunasan</option>
+                            <option value="Verifikasi pelunasan" {{ request('status') == 'Verifikasi pelunasan' ? 'selected' : '' }}>Verifikasi Pelunasan</option>
+                            <option value="Selesai" {{ request('status') == 'Selesai' ? 'selected' : '' }}>Selesai / Lunas</option>
+                            <option value="Dibatalkan" {{ request('status') == 'Dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
                         </select>
                     </div>
-                </div>
+                </form>
+
                 <div class="tw rt">
-                    <table id="rtab"></table>
+                    <table id="rtab">
+                        <thead>
+                            <tr>
+                                <th>KODE</th>
+                                <th>PELANGGAN</th>
+                                <th>PAKET</th>
+                                <th>JADWAL</th>
+                                <th>STATUS</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($reservations as $item)
+                                <tr>
+                                    <td><code>{{ $item->token }}</code></td>
+                                    <td><strong>{{ $item->name }}</strong><br><small style="color:#666">{{ $item->whatsapp }}</small></td>
+                                    <td>{{ optional($item->package)->name ?? '-' }}</td>
+                                    <td>{{ $item->date }} <br><small>{{ $item->time }}</small></td>
+                                    <td>
+                                        <span class="badge" style="padding: 3px 8px; background: #f4efe6; border-radius: 4px; font-size: 11px;">
+                                            {{ optional($item->payment)->status ?? 'Masa konsultasi' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/admin/reservasi/detail/{{ $item->token }}" class="btn sm" style="text-decoration: none;">Detail</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding: 20px; color: #888;">Data reservasi tidak ditemukan.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
             <div class="card">
                 <h3>Jadwal</h3>
-                <div class="cl"><button id="cp" aria-label="Bulan sebelumnya">‹</button><b
-                        id="cm"></b><button id="cn" aria-label="Bulan berikutnya">›</button></div>
+                <div class="cl">
+                    <button id="cp" aria-label="Bulan sebelumnya" type="button">‹</button>
+                    <b id="cm"></b>
+                    <button id="cn" aria-label="Bulan berikutnya" type="button">›</button>
+                </div>
                 <div class="cal" id="cal"></div>
-                <p class="note" style="margin-top:14px">Tanggal gelap sudah terisi — dipakai untuk mencegah
-                    bentrok jadwal.</p>
+                <p class="note" style="margin-top:14px">Tanggal gelap sudah terisi — dipakai untuk mencegah bentrok jadwal.</p>
             </div>
         </div>
     </main>
 
-
     @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const fq = document.getElementById('fq');
-    const fs = document.getElementById('fs');
-    const rtab = document.getElementById('rtab');
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let currentDate = new Date();
+        let bookedDatesList = [];
 
-    // Fungsi untuk memuat data tabel secara dinamis via API
-    function loadReservations() {
-        let query = fq.value;
-        let status = fs.value;
-
-        let url = `{{ route('admin.api.reservations') }}?q=${encodeURIComponent(query)}&status=${encodeURIComponent(status)}`;
-
-        fetch(url)
-            .then(response => response.json())
-            .then(res => {
-                if (res.success) {
-                    renderTable(res.data);
-                }
-            })
-            .catch(err => console.error('Gagal memuat data reservasi:', err));
-    }
-
-    // Render baris tabel HTML
-    function renderTable(data) {
-        if (data.length === 0) {
-            rtab.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px;">Tidak ada data reservasi ditemukan.</td></tr>`;
-            return;
+        function loadAdminCalendar() {
+            fetch(`{{ route('admin.api.schedule') }}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        bookedDatesList = res.data;
+                        renderCalendarGrid();
+                    }
+                })
+                .catch(err => console.error('Gagal memuat jadwal kalender:', err));
         }
 
-        let html = `
-            <thead>
-                <tr>
-                    <th>Kode</th>
-                    <th>Nama Pemesan</th>
-                    <th>Paket</th>
-                    <th>Tanggal & Waktu</th>
-                    <th>WhatsApp</th>
-                    <th>Status Pembayaran</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-        `;
+        function renderCalendarGrid() {
+            const calContainer = document.getElementById('cal');
+            const monthLabel = document.getElementById('cm');
+            if (!calContainer) return;
 
-        data.forEach(item => {
-    let paymentStatus = item.payment ? item.payment.status : 'KONSULTASI';
-    let packageName = item.package ? item.package.name : '-'; // Diperbaiki dari photography_package_id
-    html += `
-        <tr>
-            <td><code>${item.token}</code></td>
-            <td><strong>${item.name}</strong></td>
-            <td>${packageName}</td>
-            <td>${item.date} ${item.time}</td>
-            <td><a href="https://wa.me/${item.whatsapp}" target="_blank">${item.whatsapp}</a></td>
-            <td><span class="badge">${paymentStatus}</span></td>
-            <td>
-                <a href="#" class="btn sm">Detail</a>
-            </td>
-        </tr>
-    `;
-});
+            calContainer.innerHTML = '';
 
-        html += `</tbody>`;
-        rtab.innerHTML = html;
-    }
+            let year = currentDate.getFullYear();
+            let month = currentDate.getMonth();
 
-    // Event listener untuk input pencarian dan dropdown status
-    if (fq) fq.addEventListener('input', loadReservations);
-    if (fs) fs.addEventListener('change', loadReservations);
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            if (monthLabel) monthLabel.textContent = `${monthNames[month]} ${year}`;
 
-    // Load data pertama kali saat halaman dimuat
-    loadReservations();
+            let firstDayIndex = new Date(year, month, 1).getDay();
+            let totalDays = new Date(year, month + 1, 0).getDate();
 
-    // Memuat data jadwal kalender
-    fetch(`{{ route('admin.api.schedule') }}`)
-        .then(res => res.json())
-        .then(res => {
-            if (res.success) {
-                console.log('Jadwal terisi (Tanggal Gelap):', res.data);
-                // Anda bisa menyambungkan data res.data ke script kalender yang sudah ada di template Anda
+            for (let i = 0; i < firstDayIndex; i++) {
+                let emptyCell = document.createElement('div');
+                emptyCell.className = 'cal-day empty';
+                calContainer.appendChild(emptyCell);
             }
-        });
-});
-</script>
-@endpush
+
+            for (let day = 1; day <= totalDays; day++) {
+                let dayCell = document.createElement('div');
+                dayCell.className = 'cal-day';
+
+                let formattedMonth = String(month + 1).padStart(2, '0');
+                let formattedDay = String(day).padStart(2, '0');
+                let dateString = `${year}-${formattedMonth}-${formattedDay}`;
+
+                dayCell.textContent = day;
+
+                let isBooked = bookedDatesList.some(item => item.date === dateString);
+                if (isBooked) {
+                    dayCell.classList.add('booked');
+                }
+
+                calContainer.appendChild(dayCell);
+            }
+        }
+
+        const prevBtn = document.getElementById('cp');
+        const nextBtn = document.getElementById('cn');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendarGrid();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendarGrid();
+            });
+        }
+
+        loadAdminCalendar();
+    });
+    </script>
+    @endpush
 @endsection

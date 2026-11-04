@@ -11,70 +11,75 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminsController extends Controller
 {
-    /**
-     * Display Template.
+/**
+     * Tampilan utama Dashboard Admin.
      */
-    public function TemplateAdmin()
+    public function Dashboard(Request $request)
     {
-        return view('TemplateAdmin.main');
-    }
-    // Menampilkan view sesuai referensi Anda
-    public function Dashboard()
-    {
-        return view('TemplateAdmin.dashboard');
-    }
+        $query = Reservation::with(['package', 'payment']);
 
-    // Mengambil data reservasi untuk tabel & filter pencarian
-    public function getReservations(Request $request)
-{
-    $query = Reservation::with(['package', 'payment']);
-
-    // Filter Pencarian Nama / Token
-    if ($request->filled('q')) {
-        $keyword = $request->q;
-        $query->where(function($q) use ($keyword) {
-            $q->where('name', 'like', "%{$keyword}%")
-              .orWhere('token', 'like', "%{$keyword}%");
-        });
-    }
-
-    // Filter Status Pembayaran yang Aman (jika payment null dianggap KONSULTASI)
-    if ($request->filled('status')) {
-        $status = $request->status;
-        $query->where(function($q) use ($status) {
-            $q->whereHas('payment', function($subQ) use ($status) {
-                $subQ->where('status', $status);
+        // Filter Pencarian Nama atau Token
+        if ($request->filled('q')) {
+            $keyword = $request->q;
+            $query->where(function($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                  ->orWhere('token', 'like', "%{$keyword}%");
             });
-            
-            // Jika status yang dicari KONSULTASI, tampilkan juga yang belum punya record payment
-            if ($status === 'KONSULTASI') {
-                $q->orDoesntHave('payment');
-            }
-        });
+        }
+
+        // Filter Status Pembayaran
+        if ($request->filled('status')) {
+            $status = $request->status;
+            $query->where(function($q) use ($status) {
+                $q->whereHas('payment', function($subQ) use ($status) {
+                    $subQ->where('status', $status);
+                });
+                if ($status === 'Masa konsultasi') {
+                    $q->orDoesntHave('payment');
+                }
+            });
+        }
+
+        $reservations = $query->orderBy('date', 'desc')->get();
+
+        // Hitung Statistik (KP) dengan aman menggunakan collection filtering
+        $allReservations = Reservation::with('payment')->get();
+        $total = $allReservations->count();
+        
+        $reservasiBaru = $allReservations->filter(function($item) {
+            $status = optional($item->payment)->status;
+            return !$status || $status === 'Masa konsultasi' || $status === 'Menunggu pembayaran DP';
+        })->count();
+
+        $menungguVerifikasi = $allReservations->filter(function($item) {
+            $status = optional($item->payment)->status;
+            return $status === 'Konfirmasi pembayaran' || $status === 'Verifikasi pelunasan';
+        })->count();
+
+        $lunasSelesai = $allReservations->filter(function($item) {
+            $status = optional($item->payment)->status;
+            return $status === 'Selesai' || $status === 'Lunas';
+        })->count();
+
+        return view('TemplateAdmin.dashboard', compact('reservations', 'total', 'reservasiBaru', 'menungguVerifikasi', 'lunasSelesai'));
     }
 
-    $reservations = $query->orderBy('date', 'desc')->get();
-
-    return response()->json([
-        'success' => true,
-        'data' => $reservations
-    ]);
-}
-
-    // Mengambil data jadwal untuk kalender (mencegah bentrok jadwal)
+    /**
+     * API untuk mengambil jadwal yang sudah terisi (Kalender Admin)
+     */
     public function getSchedule(Request $request)
     {
-        $bookedDates = Reservation::select('date', 'time', 'name', 'token')->get();
+        $bookedDates = Reservation::whereHas('payment', function($q) {
+            $q->where('status', '!=', 'Dibatalkan');
+        })->orDoesntHave('payment')
+        ->select('date', 'time', 'name', 'token')
+        ->get();
 
         return response()->json([
             'success' => true,
             'data' => $bookedDates
         ]);
     }
-
-
-
-
 
     /**
      * Display LAPORAN.
@@ -83,7 +88,6 @@ class AdminsController extends Controller
     {
         return view('TemplateAdmin.laporan');
     }
-
 
 
 
@@ -292,64 +296,5 @@ class AdminsController extends Controller
         $paket->delete();
 
         return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil dihapus!');
-    }
-
-
-
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        // 
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }
