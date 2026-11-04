@@ -314,7 +314,7 @@ if (PG === 'hasil') {
   else { q('#hgal').classList.remove('hide'); q('#hl').textContent = 'Kode ' + c + ' · paket ' + d.p; q('#hg').innerHTML = ['', 'b', 'c', 'd', 'e', 'b', 'c', ''].map(v => `<div class="gph"><input type="checkbox" class="chk" aria-label="Pilih foto"><div class="ph ${v}"></div></div>`).join(''); }
   qa('#hlock a,#hb2').forEach(a => a.href = 'cek.html' + (d ? '?kode=' + c : ''));
 }
-if (PG === 'dashboard') { kpi(); rows(); calInit(false); q('#fq').oninput = rows; q('#fs').onchange = rows; }
+if (PG === 'dashboard' && !ADM) { kpi(); rows(); calInit(false); q('#fq').oninput = rows; q('#fs').onchange = rows; }
 if (PG === 'areservasi') {
   cur = norm(qs('kode')); if (!DB[cur]) cur = Object.keys(DB)[0];
   q('#ns').innerHTML = Object.keys(ST).map(k => `<option value="${k}">${ST[k].tag[0]}</option>`).join(''); aRender();
