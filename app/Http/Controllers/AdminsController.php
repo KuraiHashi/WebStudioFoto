@@ -7,9 +7,12 @@ use App\Models\Payment;
 use App\Models\PhotographyPackage;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AdminsController extends Controller
 {
@@ -18,7 +21,14 @@ class AdminsController extends Controller
      */
     public function Dashboard(Request $request)
     {
-        $query = Reservation::with(['package', 'payment']);
+        $query = Reservation::with([
+            'package',
+            'payment.histories' => fn ($historyQuery) => $historyQuery->latest(),
+        ]);
+        $filters = $request->validate([
+            'filter' => ['nullable', Rule::in(['new', 'verification', 'completed'])],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
 
         // 1. Filter Pencarian Nama atau Token
         if ($request->filled('q')) {
@@ -29,7 +39,25 @@ class AdminsController extends Controller
             });
         }
 
-        // 2. Filter Status Pembayaran / Reservasi
+        // 2. Filter cepat dari kartu statistik
+        if (($filters['filter'] ?? null) === 'new') {
+            $query->where(function ($reservationQuery) {
+                $reservationQuery->whereDoesntHave('payment')
+                    ->orWhereHas('payment', function ($paymentQuery) {
+                        $paymentQuery->whereIn('status', ['Masa konsultasi', 'Menunggu pembayaran DP']);
+                    });
+            });
+        } elseif (($filters['filter'] ?? null) === 'verification') {
+            $query->whereHas('payment', function ($paymentQuery) {
+                $paymentQuery->whereIn('status', ['Konfirmasi pembayaran', 'Verifikasi pelunasan']);
+            });
+        } elseif (($filters['filter'] ?? null) === 'completed') {
+            $query->whereHas('payment', function ($paymentQuery) {
+                $paymentQuery->where('status', 'Selesai');
+            });
+        }
+
+        // 3. Filter Status Pembayaran / Reservasi
         if ($request->filled('status')) {
             $status = $request->status;
             $query->where(function ($q) use ($status) {
@@ -44,79 +72,266 @@ class AdminsController extends Controller
             });
         }
 
-        // 3. Filter Tanggal dari Kalender
+        // 4. Filter Tanggal dari Kalender
         if ($request->filled('date')) {
             $query->whereDate('date', $request->date);
         }
 
-        $reservations = $query->orderBy('date', 'desc')->get();
+        $reservations = $query->orderByDesc('date')->orderByDesc('time')->get();
 
-        // 4. Perhitungan Statistik 4 Kartu Dashboard
-        $allReservations = Reservation::with('payment')->get();
-
-        $reservasiBaru = $allReservations->filter(function ($item) {
-            $status = optional($item->payment)->status;
-            return !$status || $status === 'Masa konsultasi' || $status === 'Menunggu pembayaran DP';
+        // 5. Perhitungan antrean kerja
+        $reservasiBaru = Reservation::where(function ($reservationQuery) {
+            $reservationQuery->whereDoesntHave('payment')
+                ->orWhereHas('payment', function ($paymentQuery) {
+                    $paymentQuery->whereIn('status', ['Masa konsultasi', 'Menunggu pembayaran DP']);
+                });
         })->count();
 
-        $menungguVerifikasi = $allReservations->filter(function ($item) {
-            $status = optional($item->payment)->status;
-            return $status === 'Konfirmasi pembayaran' || $status === 'Verifikasi pelunasan';
+        $menungguVerifikasi = Reservation::whereHas('payment', function ($paymentQuery) {
+            $paymentQuery->whereIn('status', ['Konfirmasi pembayaran', 'Verifikasi pelunasan']);
         })->count();
 
-        $sesiMendatang = $allReservations->filter(function ($item) {
-            return $item->date >= now()->toDateString() && optional($item->payment)->status !== 'Dibatalkan';
-        })->count();
-
-        $menungguHasilFoto = $allReservations->filter(function ($item) {
-            $status = optional($item->payment)->status;
-            return $status === 'Selesai' || $status === 'Menunggu pelunasan';
+        $reservasiSelesai = Reservation::whereHas('payment', function ($paymentQuery) {
+            $paymentQuery->where('status', 'Selesai');
         })->count();
 
         return view('TemplateAdmin.dashboard', compact(
             'reservations',
             'reservasiBaru',
             'menungguVerifikasi',
-            'sesiMendatang',
-            'menungguHasilFoto'
+            'reservasiSelesai'
         ));
     }
 
     /**
-     * Update Status & Catatan Verifikasi Pembayaran dari Modal
+     * Advance a payment only after an administrator accepts or rejects its latest proof.
      */
-    // 1. Update Status & Catatan Verifikasi Pembayaran
-    public function updateVerification(Request $request, $id)
+    public function updateVerification(Request $request, int $id): RedirectResponse
     {
-        $request->validate([
-            'status' => 'required|string',
-            'notes' => 'nullable|string',
+        $validated = $request->validate([
+            'status' => ['required', Rule::in([
+                'Menunggu pembayaran DP',
+                'Menunggu pelunasan',
+                'Selesai',
+                'Dibatalkan',
+            ])],
+            'notes' => ['nullable', 'string'],
         ]);
 
-        $payment = \App\Models\Payment::where('reservation_id', $id)->first();
-        if ($payment) {
-            $payment->status = $request->status;
-            $payment->notes = $request->notes;
+        DB::transaction(function () use ($id, $validated): void {
+            $reservation = Reservation::whereKey($id)->lockForUpdate()->firstOrFail();
+            $payment = $reservation->payment()->lockForUpdate()->first();
+
+            if ($payment === null) {
+                if ($validated['status'] !== 'Menunggu pembayaran DP') {
+                    throw ValidationException::withMessages([
+                        'status' => 'Pembayaran DP harus diaktifkan sebelum bukti dapat diverifikasi.',
+                    ]);
+                }
+
+                $payment = $reservation->payment()->make([
+                    'token' => $reservation->token,
+                    'status' => 'Masa konsultasi',
+                    'tagihan' => $reservation->package()->value('price'),
+                    'total_paid' => 0,
+                ]);
+            }
+
+            if ($validated['status'] === 'Dibatalkan') {
+                if (in_array($payment->status, ['Selesai', 'Dibatalkan'], true)) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Reservasi yang sudah selesai atau dibatalkan tidak dapat dibatalkan lagi.',
+                    ]);
+                }
+
+                $payment->histories()
+                    ->where('status', 'menunggu_verifikasi')
+                    ->update(['status' => 'ditolak']);
+                $payment->status = 'Dibatalkan';
+                $payment->notes = $validated['notes'] ?? null;
+                $payment->save();
+
+                return;
+            }
+
+            if ($payment->status === 'Masa konsultasi' && $validated['status'] === 'Menunggu pembayaran DP') {
+                $payment->status = 'Menunggu pembayaran DP';
+                $payment->notes = $validated['notes'] ?? null;
+                $payment->save();
+
+                return;
+            }
+
+            $expectedPaymentStatus = match ($payment->status) {
+                'Konfirmasi pembayaran' => 'Menunggu pelunasan',
+                'Verifikasi pelunasan' => 'Selesai',
+                default => null,
+            };
+            $isRejected = $validated['status'] === 'Menunggu pembayaran DP'
+                && $payment->status === 'Konfirmasi pembayaran'
+                || $validated['status'] === 'Menunggu pelunasan'
+                && $payment->status === 'Verifikasi pelunasan';
+
+            if ($expectedPaymentStatus === null
+                || $validated['status'] !== $expectedPaymentStatus && ! $isRejected) {
+                throw ValidationException::withMessages([
+                    'status' => 'Langkah ini tidak sesuai dengan tahap pembayaran reservasi saat ini.',
+                ]);
+            }
+
+            $pendingHistory = $payment->histories()
+                ->where('status', 'menunggu_verifikasi')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+            if ($pendingHistory === null) {
+                throw ValidationException::withMessages([
+                    'status' => 'Belum ada bukti pembayaran yang menunggu verifikasi.',
+                ]);
+            }
+
+            if ($payment->status === 'Verifikasi pelunasan' && $reservation->session_completed_at === null) {
+                throw ValidationException::withMessages([
+                    'status' => 'Tandai sesi pemotretan selesai sebelum memverifikasi pelunasan.',
+                ]);
+            }
+
+            if ($payment->status === 'Konfirmasi pembayaran'
+                && $pendingHistory->amount < $payment->tagihan / 2) {
+                throw ValidationException::withMessages([
+                    'status' => 'Nominal DP yang disetujui harus minimal 50% dari total tagihan.',
+                ]);
+            }
+
+            if ($isRejected) {
+                if (blank($validated['notes'] ?? null)) {
+                    throw ValidationException::withMessages([
+                        'notes' => 'Jelaskan alasan penolakan agar pelanggan tahu apa yang perlu diperbaiki.',
+                    ]);
+                }
+
+                $pendingHistory->status = 'ditolak';
+                $pendingHistory->save();
+                $payment->status = $payment->status === 'Konfirmasi pembayaran'
+                    ? 'Menunggu pembayaran DP'
+                    : 'Menunggu pelunasan';
+            } else {
+                $newTotalPaid = $payment->total_paid + $pendingHistory->amount;
+                if ($newTotalPaid > $payment->tagihan) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Total pembayaran melebihi tagihan. Periksa kembali nominal bukti.',
+                    ]);
+                }
+
+                if ($payment->status === 'Verifikasi pelunasan' && $newTotalPaid < $payment->tagihan) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Total pembayaran yang disetujui belum menutup seluruh tagihan.',
+                    ]);
+                }
+
+                $pendingHistory->status = 'diterima';
+                $pendingHistory->save();
+                $payment->total_paid = $newTotalPaid;
+                $payment->status = $payment->total_paid >= $payment->tagihan
+                    ? 'Selesai'
+                    : 'Menunggu pelunasan';
+            }
+
+            $payment->notes = $validated['notes'] ?? null;
             $payment->save();
-        }
+        });
 
         return redirect()->route('admin.dashboard')->with('success', 'Status verifikasi pembayaran berhasil diperbarui.');
     }
 
-    // 2. Update Nominal Tagihan & Total Dibayar
-    public function updateTagihan(Request $request, $id)
+    public function completeSession(Reservation $reservation): RedirectResponse
     {
-        $request->validate([
-            'tagihan' => 'required|numeric',
-            'total_paid' => 'required|numeric',
+        $payment = $reservation->payment;
+
+        if ($payment === null || ! in_array($payment->status, ['Menunggu pelunasan', 'Verifikasi pelunasan', 'Selesai'], true)) {
+            throw ValidationException::withMessages([
+                'session' => 'Sesi baru dapat ditandai selesai setelah pembayaran DP diverifikasi.',
+            ]);
+        }
+
+        if ($reservation->session_completed_at !== null) {
+            throw ValidationException::withMessages([
+                'session' => 'Sesi pemotretan ini sudah ditandai selesai.',
+            ]);
+        }
+
+        if (! $reservation->canBeMarkedComplete()) {
+            throw ValidationException::withMessages([
+                'session' => 'Sesi hanya dapat ditandai selesai setelah jadwal pemotretan berakhir.',
+            ]);
+        }
+
+        $reservation->session_completed_at = now();
+        $reservation->save();
+
+        return redirect()->route('admin.dashboard')->with('success', 'Sesi selesai. Reservasi masuk ke antrean pelunasan atau hasil foto.');
+    }
+
+    public function updatePhotoWorkflow(Request $request, Reservation $reservation): RedirectResponse
+    {
+        $validated = $request->validate([
+            'photo_delivery_url' => ['required', 'url', 'max:2048'],
         ]);
 
-        $payment = \App\Models\Payment::where('reservation_id', $id)->first();
-        if ($payment) {
-            $payment->tagihan = $request->tagihan;
-            $payment->total_paid = $request->total_paid;
-            $payment->save();
+        if ($reservation->payment?->status !== 'Selesai'
+            || $reservation->payment->total_paid < $reservation->payment->tagihan) {
+            throw ValidationException::withMessages([
+                'photo_delivery_url' => 'Hasil foto dapat dikirim setelah pembayaran lunas diverifikasi.',
+            ]);
         }
+
+        if (! in_array($reservation->photo_status, ['belum_diproses', 'diproses'], true)) {
+            throw ValidationException::withMessages([
+                'photo_delivery_url' => 'Hasil foto untuk reservasi ini sudah dikirim.',
+            ]);
+        }
+
+        $reservation->photo_status = 'siap';
+        $reservation->photo_delivery_url = $validated['photo_delivery_url'];
+        $reservation->save();
+
+        return redirect()->route('admin.dashboard')->with('success', 'Tautan hasil foto berhasil dikirim kepada pelanggan.');
+    }
+
+    // 2. Update Tagihan
+    public function updateTagihan(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'tagihan' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        DB::transaction(function () use ($id, $validated): void {
+            $reservation = Reservation::whereKey($id)->lockForUpdate()->firstOrFail();
+            $payment = $reservation->payment()->lockForUpdate()->first();
+
+            if ($payment === null) {
+                $payment = $reservation->payment()->make([
+                    'token' => $reservation->token,
+                    'total_paid' => 0,
+                ]);
+            }
+
+            $pendingAmount = $payment->histories()
+                ->where('status', 'menunggu_verifikasi')
+                ->sum('amount');
+            $minimumBill = (float) $payment->total_paid + (float) $pendingAmount;
+
+            if ((float) $validated['tagihan'] < $minimumBill) {
+                throw ValidationException::withMessages([
+                    'tagihan' => 'Tagihan tidak boleh lebih kecil dari pembayaran yang sudah diterima dan bukti yang menunggu verifikasi.',
+                ]);
+            }
+
+            $payment->token = $reservation->token;
+            $payment->tagihan = $validated['tagihan'];
+            $payment->save();
+        });
 
         return redirect()->route('admin.dashboard')->with('success', 'Data tagihan berhasil diperbarui.');
     }
@@ -131,7 +346,7 @@ class AdminsController extends Controller
             'time' => 'required',
         ]);
 
-        $reservation = \App\Models\Reservation::findOrFail($id);
+        $reservation = Reservation::findOrFail($id);
         $reservation->name = $request->name;
         $reservation->whatsapp = $request->whatsapp;
         $reservation->date = $request->date;
@@ -155,7 +370,7 @@ class AdminsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $bookedDates
+            'data' => $bookedDates,
         ]);
     }
 
@@ -179,15 +394,15 @@ class AdminsController extends Controller
 
         $query = Reservation::with(['package', 'payment']);
 
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->whereDate('date', '>=', $filters['from']);
         }
 
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->whereDate('date', '<=', $filters['to']);
         }
 
-        if (!empty($filters['q'])) {
+        if (! empty($filters['q'])) {
             $keyword = trim($filters['q']);
             if ($keyword !== '') {
                 $query->where(function ($reservationQuery) use ($keyword) {
@@ -199,7 +414,7 @@ class AdminsController extends Controller
 
         if (($filters['status'] ?? null) === 'tanpa_pembayaran') {
             $query->doesntHave('payment');
-        } elseif (!empty($filters['status'])) {
+        } elseif (! empty($filters['status'])) {
             $query->whereHas('payment', function ($paymentQuery) use ($filters) {
                 $paymentQuery->where('status', $filters['status']);
             });
@@ -218,14 +433,12 @@ class AdminsController extends Controller
         ));
     }
 
-
-
-
     // GALERY CONTROLLER //
 
     public function galeryindex()
     {
         $galeries = Galery::latest()->get();
+
         return view('TemplateAdmin.galery', compact('galeries'));
     }
 
@@ -245,7 +458,7 @@ class AdminsController extends Controller
 
                 // Simpan path ke database
                 Galery::create([
-                    'filename' => $path
+                    'filename' => $path,
                 ]);
             }
         }
@@ -277,9 +490,7 @@ class AdminsController extends Controller
         return response()->json(['success' => 'Foto terpilih berhasil dihapus.']);
     }
 
-
-
-    // PROFILE STUDIO //    
+    // PROFILE STUDIO //
 
     /**
      * Display PROFILE.
@@ -288,6 +499,7 @@ class AdminsController extends Controller
     {
         // Ambil data profil pertama (atau buat kosong jika belum ada)
         $profile = StudioProfile::first();
+
         return view('TemplateAdmin.profile', compact('profile'));
     }
 
@@ -319,7 +531,7 @@ class AdminsController extends Controller
             ]
         );
 
-        $studio = StudioProfile::first() ?? new StudioProfile();
+        $studio = StudioProfile::first() ?? new StudioProfile;
 
         $data = $request->only([
             'nama_studio' => $request->input('name'),
@@ -345,13 +557,12 @@ class AdminsController extends Controller
         return redirect()->back()->with('success', 'Profil studio berhasil diperbarui!');
     }
 
-
-
     // PAKET FOTOGRAPHY //
 
     public function fotografy()
     {
         $pakets = PhotographyPackage::latest()->get();
+
         return view('TemplateAdmin.fotografy', compact('pakets'));
     }
 
