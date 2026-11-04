@@ -47,7 +47,6 @@
                         <i>Sisa Kekurangan</i><span style="font-weight: bold; color: #d9534f;">Rp {{ number_format(max(0, $payment->tagihan - $payment->total_paid), 0, ',', '.') }}</span>
                     </div>
 
-                    {{-- CEK APAKAH MASIH DALAM TAHAP KONSULTASI --}}
                     @if ($payment->status === 'Masa konsultasi')
                         <div style="background: #fff8e1; border: 1px solid #ffe082; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px;">
                             <h4 style="color: #f57f17; margin-top: 0; font-size: 16px;">💬 Reservasi Anda Sedang dalam Masa Konsultasi</h4>
@@ -59,7 +58,6 @@
                             </a>
                         </div>
                     @else
-                        {{-- FORM PEMBAYARAN JIKA KONSULTASI SUDAH SELESAI / TANPA KONSULTASI --}}
                         <form action="{{ route('reservasi.payment.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="token" value="{{ $payment->token }}">
@@ -69,29 +67,42 @@
                                 <select name="payment_method" id="payment_method" required onchange="togglePaymentDetails()"
                                     style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; background: #fff; border-radius: 6px; font-family: inherit;">
                                     <option value="" selected disabled>-- Pilih Metode Pembayaran --</option>
-                                    <option value="Transfer Bank">Transfer Bank (Rekening Studio)</option>
-                                    <option value="QRIS">QRIS (GoPay, OVO, Dana, M-Banking)</option>
+                                    <option value="Transfer Bank">Transfer Bank (Pilih Rekening)</option>
+                                    <option value="QRIS">QRIS Studio</option>
                                     <option value="Cash">Cash / Tunai di Studio</option>
                                 </select>
                             </div>
 
-                            <!-- Detail Rekening Bank -->
+                            <!-- Dropdown Pilihan Bank (Muncul jika pilih Transfer Bank) -->
+                            <div id="bank_selection_container" style="display: none; margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; letter-spacing: 1px; color: #8c8275;">PILIH REKENING TUJUAN</label>
+                                <select name="rekening_id" id="rekening_id" onchange="updateBankInfo()"
+                                    style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; background: #fff; border-radius: 6px; font-family: inherit;">
+                                    <option value="" selected disabled>-- Pilih Bank --</option>
+                                    @foreach ($rekenings as $rek)
+                                        <option value="{{ $rek->id }}" 
+                                            data-bank="{{ $rek->nama_bank }}" 
+                                            data-acc="{{ $rek->no_rekening }}" 
+                                            data-holder="{{ $rek->nama_pemilik }}">
+                                            {{ $rek->nama_bank }} - {{ $rek->no_rekening }} (a.n. {{ $rek->nama_pemilik }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Detail Informasi Rekening (Muncul setelah bank dipilih) -->
                             <div id="bank_details_container" style="display: none; margin-bottom: 20px; padding: 16px; background: #f3ede3; border: 1px solid #d1c7bd; border-radius: 6px;">
                                 <h4 style="margin-top: 0; font-size: 15px; color: #191512;">Informasi Rekening Bank</h4>
                                 <p style="margin-bottom: 4px; color: #555; font-size: 13px;">Silakan transfer ke rekening resmi berikut:</p>
-                                <strong style="font-size: 18px; display: block; color: #191512; letter-spacing: 0.5px;">{{ $studio->no_rekening ?? '123-456-7890' }}</strong>
-                                <span style="font-size: 13px; color: #666;">a.n. {{ $studio->nama_pemilik ?? 'Liquif Picture' }} ({{ $studio->nama_bank ?? 'BCA' }})</span>
+                                <strong id="display_acc_number" style="font-size: 18px; display: block; color: #191512; letter-spacing: 0.5px;">-</strong>
+                                <span id="display_acc_holder" style="font-size: 13px; color: #666;">-</span>
                             </div>
 
-                            <!-- Detail QRIS -->
+                            <!-- Detail QRIS (Langsung tampil karena cuma satu) -->
                             <div id="qris_details_container" style="display: none; margin-bottom: 20px; padding: 16px; background: #f3ede3; border: 1px solid #d1c7bd; border-radius: 6px; text-align: center;">
                                 <h4 style="margin-top: 0; font-size: 15px; color: #191512;">Scan QRIS Liquif Picture</h4>
                                 <div style="margin: 12px 0;">
-                                    @if (!empty($studio->foto_qris))
-                                        <img src="{{ asset('storage/' . $studio->foto_qris) }}" alt="QRIS" style="max-width: 180px; height: auto; border-radius: 6px;">
-                                    @else
-                                        <img src="{{ asset('Assets/img/qris-default.png') }}" alt="QRIS" style="max-width: 180px; height: auto; border-radius: 6px;">
-                                    @endif
+                                    <img src="{{ asset('Assets/img/qris-default.png') }}" alt="QRIS" style="max-width: 180px; height: auto; border-radius: 6px;">
                                 </div>
                                 <span style="font-size: 12px; color: #666;">Dapat di-scan dengan seluruh aplikasi e-Wallet & Mobile Banking</span>
                             </div>
@@ -132,24 +143,51 @@
         </div>
     </main>
 
+    <!-- JavaScript Logika Tampilan Dinamis -->
     <script>
         function togglePaymentDetails() {
             const method = document.getElementById('payment_method').value;
+            const bankSelectContainer = document.getElementById('bank_selection_container');
             const bankBox = document.getElementById('bank_details_container');
             const qrisBox = document.getElementById('qris_details_container');
             const receiptInput = document.getElementById('receipt_photo');
+            const rekeningSelect = document.getElementById('rekening_id');
 
-            if(bankBox) bankBox.style.display = 'none';
-            if(qrisBox) qrisBox.style.display = 'none';
+            // Reset visibility
+            if (bankSelectContainer) bankSelectContainer.style.display = 'none';
+            if (bankBox) bankBox.style.display = 'none';
+            if (qrisBox) qrisBox.style.display = 'none';
 
-            if (method === 'Transfer Bank' && bankBox) {
+            if (method === 'Transfer Bank') {
+                if (bankSelectContainer) bankSelectContainer.style.display = 'block';
+                if (rekeningSelect) rekeningSelect.required = true;
+                if (receiptInput) receiptInput.required = true;
+            } else if (method === 'QRIS') {
+                if (qrisBox) qrisBox.style.display = 'block';
+                if (rekeningSelect) rekeningSelect.required = false;
+                if (receiptInput) receiptInput.required = true;
+            } else if (method === 'Cash') {
+                if (rekeningSelect) rekeningSelect.required = false;
+                if (receiptInput) receiptInput.required = false;
+            }
+        }
+
+        function updateBankInfo() {
+            const select = document.getElementById('rekening_id');
+            const selectedOption = select.options[select.selectedIndex];
+            const bankBox = document.getElementById('bank_details_container');
+
+            if (selectedOption && selectedOption.value) {
+                const bankName = selectedOption.getAttribute('data-bank');
+                const accNumber = selectedOption.getAttribute('data-acc');
+                const accHolder = selectedOption.getAttribute('data-holder');
+
+                document.getElementById('display_acc_number').innerText = accNumber;
+                document.getElementById('display_acc_holder').innerText = `a.n. ${accHolder} (${bankName})`;
+                
                 bankBox.style.display = 'block';
-                if(receiptInput) receiptInput.required = true;
-            } else if (method === 'QRIS' && qrisBox) {
-                qrisBox.style.display = 'block';
-                if(receiptInput) receiptInput.required = true;
-            } else if (method === 'Cash' && receiptInput) {
-                receiptInput.required = false;
+            } else {
+                if (bankBox) bankBox.style.display = 'none';
             }
         }
     </script>

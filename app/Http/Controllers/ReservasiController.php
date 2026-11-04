@@ -9,6 +9,7 @@ use App\Models\Reservation;
 use App\Models\StudioProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\Rekening; // Jangan lupa tambahkan use model Rekening di bagian atas
 
 class ReservasiController extends Controller
 {
@@ -29,12 +30,19 @@ class ReservasiController extends Controller
      */
     public function getBookedSchedules()
     {
-        // Ambil semua reservasi yang status pembayarannya aktif (tidak dibatalkan)
-        $reservations = Reservation::with(['payment'])
+        $reservations = Reservation::with(['payment', 'package'])
             ->whereHas('payment', function ($q) {
                 $q->where('status', '!=', 'Dibatalkan');
             })
-            ->get(['id', 'date', 'time', 'duration']);
+            ->get()
+            ->map(function ($res) {
+                return [
+                    'date' => $res->date,
+                    'time' => $res->time,
+                    'duration' => $res->duration,
+                    'is_wedding' => $res->package->is_wedding ?? false,
+                ];
+            });
 
         return response()->json($reservations);
     }
@@ -61,63 +69,92 @@ class ReservasiController extends Controller
             'source_from' => 'nullable|string',
         ]);
 
-        // Auto-generate Token
         $validated['token'] = 'RSV-' . strtoupper(Str::random(6));
 
-        // 1. Ambil durasi paket yang dipilih (misal: "2 Jam" -> ambil angka 2)
-        $package = PhotographyPackage::findOrFail($request->photography_package_id);
-        preg_match('/\d+/', $package->duration, $matches);
-        $durationHours = isset($matches[0]) ? (int)$matches[0] : 2; // Default 2 jam jika tidak ketemu
+        // Ambil data paket yang ingin dibooking user saat ini
+        $newPackage = PhotographyPackage::findOrFail($request->photography_package_id);
 
-        // Hitung waktu mulai dan waktu selesai reservasi baru
-        $newStart = strtotime($request->date . ' ' . $request->time);
-        $newEnd = $newStart + ($durationHours * 3600); // 3600 detik = 1 jam
-
-        // 2. Cek apakah ada reservasi aktif pada tanggal yang sama yang jamnya beririsan
-        $conflictingReservations = Reservation::where('date', $request->date)
+        // Ambil semua reservasi aktif di tanggal yang sama
+        $existingReservations = Reservation::where('date', $request->date)
             ->whereHas('payment', function ($q) {
                 $q->where('status', '!=', 'Dibatalkan');
             })
             ->with('package')
             ->get();
 
-        foreach ($conflictingReservations as $existing) {
-            // Hitung durasi reservasi yang sudah ada di database
-            preg_match('/\d+/', $existing->package->duration ?? '2', $matchExist);
-            $existDuration = isset($matchExist[0]) ? (int)$matchExist[0] : 2;
+        foreach ($existingReservations as $exist) {
+            $existIsWedding = $exist->package->is_wedding ?? false;
 
-            $existStart = strtotime($existing->date . ' ' . $existing->time);
-            $existEnd = $existStart + ($existDuration * 3600);
-
-            // Rumus deteksi bentrok waktu (Overlapping check)
-            if ($newStart < $existEnd && $newEnd > $existStart) {
+            // ATURAN 1: Jika di tanggal tersebut SUDAH ADA Paket Wedding, 
+            // maka tutup total untuk SEMUA jenis paket.
+            if ($existIsWedding) {
                 return redirect()->back()
                     ->withInput()
-                    ->withErrors(['time' => 'Maaf, jadwal pada tanggal dan jam tersebut sudah terisi (bentrok dengan reservasi lain). Silakan pilih jam lain.']);
+                    ->withErrors(['date' => 'Maaf, tanggal tersebut sudah dibooking penuh untuk acara Wedding. Tanggal tertutup untuk semua reservasi.']);
+            }
+
+            // ATURAN 2: Jika user saat ini ingin membooking Paket Wedding, 
+            // tapi di tanggal tersebut sudah ada reservasi paket reguler lain, tolak.
+            if ($newPackage->is_wedding) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['date' => 'Maaf, tanggal tersebut sudah memiliki jadwal pemotretan lain. Paket Wedding memerlukan tanggal yang sepenuhnya kosong.']);
             }
         }
 
+        // ATURAN 3: Jika sama-sama paket reguler (non-wedding), cek bentrok jam (overlapping) berdasarkan durasi
+        if (!$newPackage->is_wedding) {
+            preg_match('/\d+/', $newPackage->duration, $matchNew);
+            $newHours = isset($matchNew[0]) ? (int)$matchNew[0] : 1;
+            
+            // Konversi waktu baru (pastikan format jam digabung tanggal dengan benar)
+            $newStart = strtotime($request->date . ' ' . $request->time);
+            $newEnd = $newStart + ($newHours * 3600);
+
+            // LOGGING untuk debugging di laravel.log
+            \Illuminate\Support\Facades\Log::info("Mencoba Booking: {$request->date} jam {$request->time} (Start: $newStart, End: $newEnd)");
+
+            foreach ($existingReservations as $exist) {
+                if ($exist->package->is_wedding ?? false) continue;
+
+                preg_match('/\d+/', $exist->package->duration ?? '1', $matchExist);
+                $existHours = isset($matchExist[0]) ? (int)$matchExist[0] : 1;
+
+                $existStart = strtotime($exist->date . ' ' . $exist->time);
+                $existEnd = $existStart + ($existHours * 3600);
+
+                \Illuminate\Support\Facades\Log::info("Membandingkan dengan Eksisting: {$exist->date} jam {$exist->time} (Start: $existStart, End: $existEnd)");
+
+                // Rumus irisan waktu (Overlapping check)
+                if ($newStart < $existEnd && $newEnd > $existStart) {
+                    \Illuminate\Support\Facades\Log::warning("BENTROK TERDETEKSI! Menolak reservasi.");
+                    
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['time' => 'Maaf, jam pemotretan (' . $request->time . ') bentrok dengan jadwal lain yang sudah ada di hari ini (' . $exist->time . ' - durasi ' . $exist->package->duration . '). Silakan pilih jam lain.']);
+                }
+            }
+        }
+
+        // Simpan reservasi jika lolos validasi
         $reservasi = Reservation::create($validated);
-        $package = PhotographyPackage::find($request->photography_package_id);
 
         $isConsultation = $request->has('request_consultation') && $request->request_consultation == 1;
-
-        // Tentukan status awal pembayaran
         $initialStatus = $isConsultation ? 'Masa konsultasi' : 'Menunggu pembayaran DP';
 
-        // Inisialisasi ke tabel payments
+        // Inisialisasi data pembayaran
         Payment::create([
             'reservation_id' => $reservasi->id,
             'token' => $reservasi->token,
             'status' => $initialStatus,
-            'tagihan' => $package->price,
+            'tagihan' => $newPackage->price,
             'total_paid' => 0,
             'description' => $isConsultation
-                ? "Konsultasi & Paket: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")"
-                : "Harga Paket Dasar: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")",
+                ? "Konsultasi & Paket: {$newPackage->name} (Rp " . number_format($newPackage->price, 0, ',', '.') . ")"
+                : "Harga Paket Dasar: {$newPackage->name} (Rp " . number_format($newPackage->price, 0, ',', '.') . ")",
         ]);
 
-        // WhatsApp formatting
+        // Format pesan WhatsApp
         $studio = StudioProfile::first();
         $rawPhone = $studio ? $studio->phone : '081234567890';
         $adminPhone = preg_replace('/[^0-9]/', '', $rawPhone);
@@ -125,16 +162,14 @@ class ReservasiController extends Controller
             $adminPhone = '62' . substr($adminPhone, 1);
         }
 
-        if ($isConsultation) {
-            $pesan = "Halo Admin, saya ingin mengkonfirmasi *RESERVASI & KONSULTASI* pemotretan:\n\n";
-        } else {
-            $pesan = "Halo Admin, saya ingin mengkonfirmasi *RESERVASI* pemotretan:\n\n";
-        }
+        $pesan = $isConsultation
+            ? "Halo Admin, saya ingin mengkonfirmasi *RESERVASI & KONSULTASI* pemotretan:\n\n"
+            : "Halo Admin, saya ingin mengkonfirmasi *RESERVASI* pemotretan:\n\n";
 
         $pesan .= "🔑 *Token Reservasi*: {$reservasi->token}\n" .
             "👤 *Nama*: {$reservasi->name}\n" .
             "📱 *No WhatsApp*: {$reservasi->whatsapp}\n" .
-            "📦 *Paket*: {$package->name} (Rp " . number_format($package->price, 0, ',', '.') . ")\n" .
+            "📦 *Paket*: {$newPackage->name} (Rp " . number_format($newPackage->price, 0, ',', '.') . ")\n" .
             "📅 *Tanggal*: {$reservasi->date}\n" .
             "⏰ *Jam*: {$reservasi->time}\n" .
             "⏱️ *Durasi*: {$reservasi->duration}\n" .
@@ -202,12 +237,16 @@ class ReservasiController extends Controller
         $token = $request->query('token');
         $payment = null;
         $studio = StudioProfile::first();
+        
+        // Ambil daftar rekening aktif dari database
+        $rekenings = Rekening::all(); // Atau Rekening::where('is_active', true)->get() jika ada kolom status aktif
 
         if ($token) {
             $payment = Payment::with(['reservation.package'])->where('token', strtoupper(trim($token)))->first();
         }
 
-        return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio'));
+        // Kirim $rekenings ke view detailPembayaran
+        return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio', 'rekenings'));
     }
 
     /**
@@ -219,6 +258,7 @@ class ReservasiController extends Controller
             'token' => 'required|exists:payments,token',
             'amount' => 'required|numeric|min:1',
             'payment_method' => 'required|string',
+            'rekening_id' => 'required_if:payment_method,Transfer Bank|nullable|exists:rekening,id', // Validasi rekening tujuan transfer
             'receipt_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'notes' => 'nullable|string',
         ]);
@@ -233,6 +273,7 @@ class ReservasiController extends Controller
 
             PaymentHistory::create([
                 'payment_id' => $payment->id,
+                'rekening_id' => $request->payment_method === 'Transfer Bank' ? $request->rekening_id : null, // Simpan ID rekening jika transfer bank
                 'amount' => $request->amount,
                 'payment_method' => $request->payment_method,
                 'receipt_photo' => $receiptPath,

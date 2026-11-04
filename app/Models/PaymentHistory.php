@@ -21,4 +21,8 @@ class PaymentHistory extends Model
     {
         return $this->belongsTo(Payment::class);
     }
+    public function rekening()
+    {
+        return $this->belongsTo(Rekening::class, 'rekening_id');
+    }
 }

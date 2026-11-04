@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('photography_packages', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->boolean('is_wedding')->default(false);
             $table->decimal('price', 12, 2);
             $table->string('duration');
             $table->string('bonus')->nullable();
