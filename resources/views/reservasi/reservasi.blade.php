@@ -12,11 +12,11 @@
                 Lengkapi data berikut. Pilih paket pemotretan dan jadwalkan sesi konsultasi jika Anda memerlukan diskusi
                 konsep terlebih dahulu.
             </p>
-            <div class="seq">
+            {{-- <div class="seq">
                 <span>1 Pilih paket</span>
                 <span class="on">2 Isi reservasi</span>
                 <span>3 Cek status &amp; bayar</span>
-            </div>
+            </div> --}}
 
             <div class="two">
                 <form action="{{ route('reservasi.store') }}" method="POST" class="fc" id="rform">
