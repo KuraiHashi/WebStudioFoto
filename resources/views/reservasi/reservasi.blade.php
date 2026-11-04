@@ -12,11 +12,6 @@
                 Lengkapi data berikut. Pilih paket pemotretan dan jadwalkan sesi konsultasi jika Anda memerlukan diskusi
                 konsep terlebih dahulu.
             </p>
-            {{-- <div class="seq">
-                <span>1 Pilih paket</span>
-                <span class="on">2 Isi reservasi</span>
-                <span>3 Cek status &amp; bayar</span>
-            </div> --}}
 
             <div class="two">
                 <form action="{{ route('reservasi.store') }}" method="POST" class="fc" id="rform">
@@ -122,7 +117,6 @@
                         </div>
                         <div class="fld">
                             <label>JAM PEMOTRETAN</label>
-                            <!-- Input jam dibuat bebas diisi/diketik oleh user -->
                             <input id="rj" name="time" type="time" placeholder="--:--" required />
 
                             <!-- Container Informasi Jadwal Terisi -->
@@ -199,7 +193,7 @@
         </div>
     </main>
 
-    <!-- SCRIPT UTAMA, FORM, & SWEETALERT -->
+    <!-- SCRIPT UTAMA, KALENDER, & VALIDASI BENTROK JAM -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const selectPaket = document.getElementById('rp');
@@ -217,6 +211,15 @@
 
             const selectMedia = document.getElementById('konsultasi-media');
             const offlineContainer = document.getElementById('media-offline-container');
+
+            const calContainer = document.getElementById('cal');
+            const monthLabel = document.getElementById('cm');
+            const prevBtn = document.getElementById('cp');
+            const nextBtn = document.getElementById('cn');
+            const inputDate = document.getElementById('rt');
+
+            let currentDate = new Date();
+            let bookedSlots = [];
 
             function updateSummary() {
                 const selectedOption = selectPaket.options[selectPaket.selectedIndex];
@@ -266,58 +269,7 @@
                 }
             });
 
-            // SweetAlert Sukses Reservasi
-            @if (session('swal_success'))
-                let isConsultationChecked = {{ session('is_consultation') ? 'true' : 'false' }};
-                let token = "{{ session('token') }}";
-
-                Swal.fire({
-                    icon: 'success',
-                    title: isConsultationChecked ? 'Reservasi & Konsultasi Berhasil!' :
-                        'Reservasi Berhasil!',
-                    html: `
-                        <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                            ${isConsultationChecked 
-                                ? 'Terima kasih, data reservasi dan pengajuan konsultasi Anda telah kami simpan.' 
-                                : 'Terima kasih, data reservasi Anda telah kami simpan. Silakan lakukan pembayaran DP.'}
-                        </p>
-                        <div style="background: #f8f9fa; border: 1px dashed #d4af37; padding: 12px; border-radius: 8px; margin-top: 10px;">
-                            <span style="font-size: 11px; text-transform: uppercase; color: #888; display: block;">Token Reservasi Anda (Wajib Disimpan):</span>
-                            <strong style="font-size: 20px; color: #1a1814; letter-spacing: 1.5px;">${token}</strong>
-                        </div>
-                    `,
-                    confirmButtonText: isConsultationChecked ? 'Konfirmasi ke Admin (WhatsApp)' :
-                        'Cek Detail Reservasi & Bayar',
-                    confirmButtonColor: isConsultationChecked ? '#25D366' : '#191512',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        if (isConsultationChecked) {
-                            window.open("{{ session('whatsapp_url') }}", '_blank');
-                            window.location.href = "{{ route('reservasi.index') }}";
-                        } else {
-                            window.location.href = "{{ route('reservasi.result') }}?token=" + token;
-                        }
-                    }
-                });
-            @endif
-        });
-    </script>
-
-    {{-- SCRIPT KALENDER & INFORMASI JAM TERISI --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const calContainer = document.getElementById('cal');
-            const monthLabel = document.getElementById('cm');
-            const prevBtn = document.getElementById('cp');
-            const nextBtn = document.getElementById('cn');
-
-            const inputDate = document.getElementById('rt');
-
-            let currentDate = new Date();
-            let bookedSlots = [];
-
+            // Fetch Data Jadwal Terisi
             function fetchBookedSlots() {
                 fetch("{{ route('reservasi.booked-slots') }}")
                     .then(response => response.json())
@@ -379,17 +331,12 @@
                 }
             }
 
-            if (inputDate) {
-                inputDate.addEventListener('change', function() {
-                    if (this.value) {
-                        showBookedTimesForDate(this.value);
-                    }
-                });
-            }
-
             function checkIfDateIsFullyBooked(dateStr) {
                 const existing = bookedSlots.filter(item => item.date === dateStr);
-                return existing.length >= 4;
+                const hasWedding = existing.some(item => 
+                    item.is_wedding === true || item.is_wedding === 1 || item.is_wedding === "1"
+                );
+                return hasWedding || existing.length >= 4;
             }
 
             function showBookedTimesForDate(selectedDate) {
@@ -413,6 +360,65 @@
                 }
             }
 
+            if (inputDate) {
+                inputDate.addEventListener('change', function() {
+                    if (this.value) {
+                        showBookedTimesForDate(this.value);
+                    }
+                });
+            }
+
+            // Validasi Real-Time Bentrok Jam Pemotretan dengan SweetAlert2 + Tombol Tutup
+            document.getElementById('rj').addEventListener('change', function() {
+                const selectedDate = document.getElementById('rt').value;
+                const selectedTime = this.value;
+                
+                if (!selectedDate || !selectedTime) return;
+
+                const existing = bookedSlots.filter(item => item.date === selectedDate);
+                
+                let isConflict = false;
+                let conflictInfo = '';
+
+                existing.forEach(res => {
+                    if (res.is_wedding) return;
+
+                    let match = res.duration ? res.duration.match(/\d+/) : null;
+                    let hours = match ? parseInt(match[0]) : 1;
+                    
+                    let existStart = new Date(`${res.date}T${res.time}`).getTime();
+                    let existEnd = existStart + (hours * 3600 * 1000);
+                    
+                    let selectedOption = document.getElementById('rp').selectedOptions[0];
+                    let newDurationText = selectedOption ? selectedOption.getAttribute('data-duration') : '1 Jam';
+                    let newMatch = newDurationText.match(/\d+/);
+                    let newHours = newMatch ? parseInt(newMatch[0]) : 1;
+
+                    let newStart = new Date(`${selectedDate}T${selectedTime}`).getTime();
+                    let newEnd = newStart + (newHours * 3600 * 1000);
+
+                    // Rumus Irisan Waktu (Overlapping Check)
+                    if (newStart < existEnd && newEnd > existStart) {
+                        isConflict = true;
+                        conflictInfo = `Jam ${res.time} (Durasi ${res.duration})`;
+                    }
+                });
+
+                if (isConflict) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Jadwal Bentrok!',
+                        text: `Jam yang Anda pilih bertabrakan dengan jadwal lain (${conflictInfo}) di tanggal ini. Silakan pilih jam lain.`,
+                        showCancelButton: true,
+                        confirmButtonText: 'Pilih Jam Lain',
+                        cancelButtonText: 'Tutup',
+                        confirmButtonColor: '#191512',
+                        cancelButtonColor: '#6c757d'
+                    });
+                    this.value = ''; // Reset input jam otomatis
+                }
+            });
+
             if (prevBtn) {
                 prevBtn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -430,6 +436,46 @@
             }
 
             fetchBookedSlots();
+
+            // SweetAlert Sukses Reservasi dengan Tombol Tutup / Batal
+            @if (session('swal_success'))
+                let isConsultationChecked = {{ session('is_consultation') ? 'true' : 'false' }};
+                let token = "{{ session('token') }}";
+
+                Swal.fire({
+                    icon: 'success',
+                    title: isConsultationChecked ? 'Reservasi & Konsultasi Berhasil!' :
+                        'Reservasi Berhasil!',
+                    html: `
+                        <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                            ${isConsultationChecked 
+                                ? 'Terima kasih, data reservasi dan pengajuan konsultasi Anda telah kami simpan.' 
+                                : 'Terima kasih, data reservasi Anda telah kami simpan. Silakan lakukan pembayaran DP.'}
+                        </p>
+                        <div style="background: #f8f9fa; border: 1px dashed #d4af37; padding: 12px; border-radius: 8px; margin-top: 10px;">
+                            <span style="font-size: 11px; text-transform: uppercase; color: #888; display: block;">Token Reservasi Anda (Wajib Disimpan):</span>
+                            <strong style="font-size: 20px; color: #1a1814; letter-spacing: 1.5px;">${token}</strong>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: isConsultationChecked ? 'Konfirmasi ke Admin (WhatsApp)' :
+                        'Cek Detail Reservasi & Bayar',
+                    cancelButtonText: 'Tutup',
+                    confirmButtonColor: isConsultationChecked ? '#25D366' : '#191512',
+                    cancelButtonColor: '#6c757d',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (isConsultationChecked) {
+                            window.open("{{ session('whatsapp_url') }}", '_blank');
+                            window.location.href = "{{ route('reservasi.index') }}";
+                        } else {
+                            window.location.href = "{{ route('reservasi.result') }}?token=" + token;
+                        }
+                    }
+                });
+            @endif
         });
     </script>
 

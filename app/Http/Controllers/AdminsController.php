@@ -25,7 +25,7 @@ class AdminsController extends Controller
             $keyword = trim($request->q);
             $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('token', 'like', "%{$keyword}%");
+                    ->orWhere('token', 'like', "%{$keyword}%");
             });
         }
 
@@ -86,60 +86,60 @@ class AdminsController extends Controller
      * Update Status & Catatan Verifikasi Pembayaran dari Modal
      */
     // 1. Update Status & Catatan Verifikasi Pembayaran
-public function updateVerification(Request $request, $id)
-{
-    $request->validate([
-        'status' => 'required|string',
-        'notes' => 'nullable|string',
-    ]);
+    public function updateVerification(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
 
-    $payment = \App\Models\Payment::where('reservation_id', $id)->first();
-    if ($payment) {
-        $payment->status = $request->status;
-        $payment->notes = $request->notes;
-        $payment->save();
+        $payment = \App\Models\Payment::where('reservation_id', $id)->first();
+        if ($payment) {
+            $payment->status = $request->status;
+            $payment->notes = $request->notes;
+            $payment->save();
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', 'Status verifikasi pembayaran berhasil diperbarui.');
     }
 
-    return redirect()->route('admin.dashboard')->with('success', 'Status verifikasi pembayaran berhasil diperbarui.');
-}
+    // 2. Update Nominal Tagihan & Total Dibayar
+    public function updateTagihan(Request $request, $id)
+    {
+        $request->validate([
+            'tagihan' => 'required|numeric',
+            'total_paid' => 'required|numeric',
+        ]);
 
-// 2. Update Nominal Tagihan & Total Dibayar
-public function updateTagihan(Request $request, $id)
-{
-    $request->validate([
-        'tagihan' => 'required|numeric',
-        'total_paid' => 'required|numeric',
-    ]);
+        $payment = \App\Models\Payment::where('reservation_id', $id)->first();
+        if ($payment) {
+            $payment->tagihan = $request->tagihan;
+            $payment->total_paid = $request->total_paid;
+            $payment->save();
+        }
 
-    $payment = \App\Models\Payment::where('reservation_id', $id)->first();
-    if ($payment) {
-        $payment->tagihan = $request->tagihan;
-        $payment->total_paid = $request->total_paid;
-        $payment->save();
+        return redirect()->route('admin.dashboard')->with('success', 'Data tagihan berhasil diperbarui.');
     }
 
-    return redirect()->route('admin.dashboard')->with('success', 'Data tagihan berhasil diperbarui.');
-}
+    // 3. Update Detail Reservasi (Nama, WhatsApp, Tanggal, Jam)
+    public function updateReservasiDetail(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'whatsapp' => 'required|string|max:20',
+            'date' => 'required|date',
+            'time' => 'required',
+        ]);
 
-// 3. Update Detail Reservasi (Nama, WhatsApp, Tanggal, Jam)
-public function updateReservasiDetail(Request $request, $id)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'whatsapp' => 'required|string|max:20',
-        'date' => 'required|date',
-        'time' => 'required',
-    ]);
+        $reservation = \App\Models\Reservation::findOrFail($id);
+        $reservation->name = $request->name;
+        $reservation->whatsapp = $request->whatsapp;
+        $reservation->date = $request->date;
+        $reservation->time = $request->time;
+        $reservation->save();
 
-    $reservation = \App\Models\Reservation::findOrFail($id);
-    $reservation->name = $request->name;
-    $reservation->whatsapp = $request->whatsapp;
-    $reservation->date = $request->date;
-    $reservation->time = $request->time;
-    $reservation->save();
-
-    return redirect()->route('admin.dashboard')->with('success', 'Detail data reservasi berhasil diperbarui.');
-}
+        return redirect()->route('admin.dashboard')->with('success', 'Detail data reservasi berhasil diperbarui.');
+    }
 
     /**
      * API Endpoint Jadwal Terisi untuk Kalender Admin
@@ -149,9 +149,9 @@ public function updateReservasiDetail(Request $request, $id)
         $bookedDates = Reservation::whereHas('payment', function ($q) {
             $q->where('status', '!=', 'Dibatalkan');
         })
-        ->orDoesntHave('payment')
-        ->select('date', 'time', 'name', 'token')
-        ->get();
+            ->orDoesntHave('payment')
+            ->select('date', 'time', 'name', 'token')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -206,8 +206,8 @@ public function updateReservasiDetail(Request $request, $id)
         }
 
         $reservations = $query->orderByDesc('date')->get();
-        $totalTagihan = $reservations->sum(fn (Reservation $reservation) => $reservation->payment?->tagihan ?? 0);
-        $totalDiterima = $reservations->sum(fn (Reservation $reservation) => $reservation->payment?->total_paid ?? 0);
+        $totalTagihan = $reservations->sum(fn(Reservation $reservation) => $reservation->payment?->tagihan ?? 0);
+        $totalDiterima = $reservations->sum(fn(Reservation $reservation) => $reservation->payment?->total_paid ?? 0);
 
         return view('TemplateAdmin.laporan', compact(
             'reservations',
@@ -359,61 +359,52 @@ public function updateReservasiDetail(Request $request, $id)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'duration' => 'required|string|max:50',
-            'bonus' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
+            'price' => 'required|numeric',
+            'duration' => 'required|string',
             'facilities' => 'required|string',
-            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:4048', // Validasi tiap file foto (maks 2MB)
         ]);
 
-        $data = $request->except('photos');
-        $photoPaths = [];
+        // Mengambil nilai is_wedding (jika dicentang bernilai 1, jika tidak bernilai 0)
+        $isWedding = $request->has('is_wedding') ? 1 : 0;
 
-        // Proses upload banyak foto
-        if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $photo) {
-                // Simpan ke folder public/storage/packages
-                $path = $photo->store('packages', 'public');
-                $photoPaths[] = $path;
-            }
-            $data['photos'] = $photoPaths;
-        }
+        PhotographyPackage::create([
+            'name' => $request->name,
+            'is_wedding' => $isWedding, // <-- Simpan ke database
+            'price' => $request->price,
+            'duration' => $request->duration,
+            'facilities' => $request->facilities,
+            'description' => $request->description,
+            'bonus' => $request->bonus,
+        ]);
 
-        PhotographyPackage::create($data);
-
-        return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil ditambahkan!');
+        return redirect()->back()->with('success', 'Paket fotografi berhasil ditambahkan.');
     }
 
     public function updateFotografy(Request $request, $id)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'duration' => 'required|string|max:50',
-            'bonus' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
+            'price' => 'required|numeric',
+            'duration' => 'required|string',
             'facilities' => 'required|string',
-            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:4048',
         ]);
 
         $paket = PhotographyPackage::findOrFail($id);
-        $data = $request->except('photos');
 
-        $photoPaths = $paket->photos ?? []; // Ambil foto lama jika ada
+        // Cek apakah checkbox di-centang saat update
+        $isWedding = $request->has('is_wedding') ? 1 : 0;
 
-        // Jika user mengunggah foto baru
-        if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $photo) {
-                $path = $photo->store('packages', 'public');
-                $photoPaths[] = $path; // Gabungkan dengan foto lama
-            }
-            $data['photos'] = $photoPaths;
-        }
+        $paket->update([
+            'name' => $request->name,
+            'is_wedding' => $isWedding, // <-- Perbarui data di database
+            'price' => $request->price,
+            'duration' => $request->duration,
+            'facilities' => $request->facilities,
+            'description' => $request->description,
+            'bonus' => $request->bonus,
+        ]);
 
-        $paket->update($data);
-
-        return redirect()->route('admin.fotografi')->with('success', 'Paket fotografi berhasil diperbarui!');
+        return redirect()->back()->with('success', 'Paket fotografi berhasil diperbarui.');
     }
 
     /**

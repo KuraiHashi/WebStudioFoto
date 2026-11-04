@@ -24,7 +24,7 @@
         <aside class="sb">
             <a class="logo" href="dashboard.html"><i></i>liquif <small>Admin</small></a>
             <a class="m @yield('dashboard')" href="/dashboard"><b>01</b>Dashboard</a>
-            <a class="m @yield('laporan')" href="/laporan"><b>02</b>Laporan</a>
+            <a class="m @yield('laporan')" href="/admin/laporan"><b>02</b>Laporan</a>
             <a class="m @yield('fotografy')" href="/fotografi"><b>03</b>Paket Fotografi</a>
             <a class="m @yield('galery')" href="/admin/galery"><b>04</b>Galeri Studio</a>
             <a class="m @yield('profile')" href="/admin/profile"><b>05</b>Profil Studio</a>
