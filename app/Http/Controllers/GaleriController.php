@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Galery;
 use App\Models\PhotographyPackage;
+use App\Models\Testimonial;
 use Illuminate\Http\Request;
 
 class GaleriController extends Controller
@@ -16,8 +17,10 @@ class GaleriController extends Controller
         // Mengambil semua data paket fotografi
     $packages = PhotographyPackage::all();
 
+        $testimonials = Testimonial::latest()->limit(3)->get();
+
         // dd($packages->toArray());
 
-        return view('template.main', compact('galeries','packages'));
+        return view('template.main', compact('galeries', 'packages', 'testimonials'));
     }
 }

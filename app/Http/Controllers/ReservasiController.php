@@ -235,7 +235,7 @@ class ReservasiController extends Controller
         $payment = null;
 
         if ($token) {
-            $payment = Payment::with(['reservation.package', 'reservation', 'histories'])
+            $payment = Payment::with(['reservation.package', 'reservation.testimonial', 'histories'])
                 ->where('token', strtoupper(trim($token)))
                 ->first();
         }
@@ -251,7 +251,7 @@ class ReservasiController extends Controller
         $token = $request->query('token');
         $payment = null;
         $studio = StudioProfile::first();
-        
+
         // Ambil daftar rekening aktif dari database
         $rekenings = Rekening::all(); // Atau Rekening::where('is_active', true)->get() jika ada kolom status aktif
 
