@@ -19,6 +19,7 @@
             </div>
 
             <div class="two">
+                <!-- FORM KIRI: MENCAKUP INPUT PAKET, RINGKASAN PAKET, & DATA DIRI -->
                 <form action="{{ route('reservasi.store') }}" method="POST" class="fc" id="rform">
                     @csrf
                     <input type="hidden" name="source_from" value="{{ isset($selectedPackageId) ? 'detail' : 'direct' }}">
@@ -40,9 +41,31 @@
                         </select>
                     </div>
 
+                    <!-- RINGKASAN PAKET DIPINDAHKAN KE SINI (PAS DI BAWAH INPUT PAKET) -->
+                    <div class="fc dk" id="rsum"
+                        style="margin-top: 16px; margin-bottom: 20px; background: #1a1814; color: #f3ede3; border-radius: 8px 8px 24px 8px; padding: 20px;">
+                        <div
+                            style="font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #c4b5a5; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <span style="display: inline-block; width: 16px; height: 1px; background: #c4b5a5;"></span>
+                            RINGKASAN PAKET
+                        </div>
+                        <h2 id="sum-name"
+                            style="font-family: serif; font-size: 22px; margin-bottom: 6px; font-weight: normal; color: #fff;">
+                            Pilih Paket</h2>
+                        <div id="sum-price"
+                            style="font-family: serif; font-size: 20px; color: #d4af37; margin-bottom: 8px;">Rp 0</div>
+                        <p id="sum-facilities" style="font-size: 12px; color: #c4b5a5; margin: 0; line-height: 1.4;">
+                            Silakan pilih paket di atas untuk melihat detail.</p>
+
+                        <div id="sum-consultation-badge"
+                            style="display: none; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px; padding-top: 8px; font-size: 11px; color: #d4af37;">
+                            ✨ Termasuk Sesi Konsultasi Konsep
+                        </div>
+                    </div>
+
                     <!-- KONSEP TAMBAHAN: Opsi Pengajuan Konsultasi -->
                     <div class="fld"
-                        style="margin-top: 20px; background: #faf6f0; padding: 16px; border-radius: 8px; border: 1px dashed #d4af37;">
+                        style="margin-top: 15px; background: #faf6f0; padding: 16px; border-radius: 8px; border: 1px dashed #d4af37;">
                         <label
                             style="display: flex; align-items: center; cursor: pointer; font-weight: 600; color: #1a1814; margin-bottom: 0;">
                             <input type="checkbox" id="toggle-konsultasi" name="request_consultation" value="1"
@@ -113,30 +136,11 @@
                             <input id="rk" name="whatsapp" placeholder="081234567890" data-vt="phone" required />
                         </div>
                     </div>
-                    <div class="r2">
-                        <div class="fld">
-                            <label>TANGGAL</label>
-                            <input id="rt" name="date" type="date" placeholder="dd/mm/yyyy" data-vt="date"
-                                required style="cursor: pointer;" />
-                            <small style="color: #8c8275; font-size: 11px;">Pilih tanggal dari kalender di samping.</small>
-                        </div>
-                        <div class="fld">
-                            <label>JAM PEMOTRETAN</label>
-                            <!-- Input jam dibuat bebas diisi/diketik oleh user -->
-                            <input id="rj" name="time" type="time" placeholder="--:--" required />
 
-                            <!-- Container Informasi Jadwal Terisi -->
-                            <div id="booked-info-container"
-                                style="display: none; margin-top: 8px; background: #faf6f0; padding: 10px; border-radius: 6px; border: 1px solid #e0d6cc;">
-                                <span
-                                    style="font-size: 11px; font-weight: 600; color: #b8860b; display: block; margin-bottom: 4px;">⚠️
-                                    Jadwal yang sudah terisi di tanggal ini:</span>
-                                <div id="booked-list-text" style="font-size: 12px; color: #555;"></div>
-                            </div>
-                            <small id="time-helper" style="color: #8c8275; font-size: 11px;">Bebas memilih jam, pastikan
-                                tidak bentrok.</small>
-                        </div>
-                    </div>
+                    <!-- Hidden Input Tanggal & Jam untuk Backend -->
+                    <input type="hidden" id="rt" name="date" required />
+                    <input type="hidden" id="rj" name="time" required />
+
                     <div class="r2">
                         <div class="fld">
                             <label>DURASI</label>
@@ -160,40 +164,43 @@
                     </div>
                 </form>
 
-                <div>
-                    <div class="fc dk" id="rsum"
-                        style="margin-bottom: 20px; background: #1a1814; color: #f3ede3; border-radius: 8px 8px 36px 8px; padding: 24px;">
-                        <div
-                            style="font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #c4b5a5; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 24px; height: 1px; background: #c4b5a5;"></span>
-                            RINGKASAN PAKET
+                <!-- KOLOM KANAN: KHUSUS TANGGAL & WAKTU SESI SECARA VERTIKAL -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    
+                    <!-- 1. Pilih Tanggal -->
+                    <div class="fc" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                        <h3 style="font-size: 16px; margin-bottom: 14px; font-weight: 600; color: #1a1814;">Pilih Tanggal</h3>
+                        <div class="cl" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <button id="cp" aria-label="Bulan sebelumnya" style="background:none; border:none; cursor:pointer; font-size:16px;">&lsaquo;</button>
+                            <b id="cm" style="font-size: 13px; color: #333;">November 2026</b>
+                            <button id="cn" aria-label="Bulan berikutnya" style="background:none; border:none; cursor:pointer; font-size:16px;">&rsaquo;</button>
                         </div>
-                        <h2 id="sum-name"
-                            style="font-family: serif; font-size: 28px; margin-bottom: 8px; font-weight: normal; color: #fff;">
-                            Pilih Paket</h2>
-                        <div id="sum-price"
-                            style="font-family: serif; font-size: 24px; color: #d4af37; margin-bottom: 12px;">Rp 0</div>
-                        <p id="sum-facilities" style="font-size: 13px; color: #c4b5a5; margin: 0; margin-bottom: 12px;">
-                            Silakan pilih paket di samping untuk melihat detail.</p>
+                        <!-- Header Hari -->
+                        <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; color: #888; margin-bottom: 6px;">
+                            <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+                        </div>
+                        <div class="cal" id="cal" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center;"></div>
+                        
+                        <!-- Legend / Indikator -->
+                        <div style="display: flex; gap: 16px; align-items: center; margin-top: 16px; font-size: 11px; color: #666;">
+                            <span style="display: flex; align-items: center; gap: 4px;"><i style="width: 8px; height: 8px; background: #d4af37; border-radius: 50%; display: inline-block;"></i> Tersedia[cite: 2]</span>
+                            <span style="display: flex; align-items: center; gap: 4px;"><i style="width: 8px; height: 8px; background: #ccc; border-radius: 50%; display: inline-block;"></i> Terisi[cite: 2]</span>
+                        </div>
+                    </div>
 
-                        <div id="sum-consultation-badge"
-                            style="display: none; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; font-size: 12px; color: #d4af37;">
-                            ✨ Termasuk Sesi Konsultasi Konsep
+                    <!-- 2. Waktu Sesi (Desain Tema Gelap Elegan) -->
+                    <div class="fc dk" id="ketersediaan-card" style="background: #1a1814; color: #f3ede3; padding: 24px; border-radius: 8px 8px 36px 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: flex-start;">
+                        <div style="font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #c4b5a5; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="display: inline-block; width: 20px; height: 1px; background: #c4b5a5;"></span>
+                            WAKTU SESI
+                        </div>
+                        <div id="selected-date-label" style="font-size: 13px; font-weight: 500; color: #d4af37; margin-bottom: 16px;">Pilih tanggal terlebih dahulu</div>
+                        
+                        <div id="ketersediaan-content" style="font-size: 12px; color: #c4b5a5; line-height: 1.5;">
+                            <p style="color: #888; font-style: italic;">Pilih tanggal di kalender di atas untuk melihat jadwal terisi.</p>
                         </div>
                     </div>
 
-                    <div class="fc">
-                        <h3>Ketersediaan jadwal</h3>
-                        <div class="cl">
-                            <button id="cp" aria-label="Bulan sebelumnya">&lsaquo;</button>
-                            <b id="cm">Oktober 2026</b>
-                            <button id="cn" aria-label="Bulan berikutnya">&rsaquo;</button>
-                        </div>
-                        <div class="cal" id="cal"></div>
-                        <div class="legend">
-                            <span><i></i>Terisi</span><span>Ketuk tanggal kosong untuk memilih</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -229,7 +236,7 @@
                 } else {
                     sumName.textContent = 'Pilih Paket';
                     sumPrice.textContent = 'Rp 0';
-                    sumFacilities.textContent = 'Silakan pilih paket di samping untuk melihat detail.';
+                    sumFacilities.textContent = 'Silakan pilih paket di atas untuk melihat detail.';
                     inputDuration.value = '';
                 }
             }
@@ -305,7 +312,7 @@
         });
     </script>
 
-    {{-- SCRIPT KALENDER & INFORMASI JAM TERISI --}}
+    {{-- SCRIPT KALENDER & WAKTU SESUAI TEMA GELAP ELEGAN --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const calContainer = document.getElementById('cal');
@@ -314,9 +321,13 @@
             const nextBtn = document.getElementById('cn');
 
             const inputDate = document.getElementById('rt');
+            const inputTime = document.getElementById('rj');
+            const dateLabel = document.getElementById('selected-date-label');
+            const ketersediaanContent = document.getElementById('ketersediaan-content');
 
             let currentDate = new Date();
             let bookedSlots = [];
+            let selectedDateStr = null;
 
             function fetchBookedSlots() {
                 fetch("{{ route('reservasi.booked-slots') }}")
@@ -345,7 +356,6 @@
 
                 for (let i = 0; i < firstDayIndex; i++) {
                     let emptyCell = document.createElement('div');
-                    emptyCell.className = 'cal-day empty';
                     calContainer.appendChild(emptyCell);
                 }
 
@@ -358,58 +368,124 @@
                     let dateString = `${year}-${formattedMonth}-${formattedDay}`;
 
                     dayCell.textContent = day;
+                    dayCell.style.cssText = "padding: 8px 0; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; background: #faf6f0; color: #2c2825;";
 
-                    let isFullyBooked = checkIfDateIsFullyBooked(dateString);
-
-                    if (isFullyBooked) {
-                        dayCell.classList.add('booked');
-                        dayCell.title = "Tanggal ini sudah penuh";
-                    } else {
-                        dayCell.classList.add('available');
-                        dayCell.addEventListener('click', function() {
-                            document.querySelectorAll('.cal-day').forEach(el => el.classList.remove(
-                                'selected'));
-                            dayCell.classList.add('selected');
-                            inputDate.value = dateString;
-                            showBookedTimesForDate(dateString);
-                        });
+                    let hasBookings = bookedSlots.some(item => item.date === dateString);
+                    if (hasBookings) {
+                        dayCell.style.border = "1px solid #d4af37";
                     }
+
+                    if (dateString === selectedDateStr) {
+                        dayCell.style.background = "#1a1814";
+                        dayCell.style.color = "#fff";
+                        dayCell.style.fontWeight = "bold";
+                    }
+
+                    dayCell.addEventListener('click', function() {
+                        document.querySelectorAll('.cal-day').forEach(el => {
+                            el.style.background = "#faf6f0";
+                            el.style.color = "#2c2825";
+                            el.style.fontWeight = "normal";
+                        });
+                        dayCell.style.background = "#1a1814";
+                        dayCell.style.color = "#fff";
+                        dayCell.style.fontWeight = "bold";
+
+                        selectedDateStr = dateString;
+                        inputDate.value = dateString;
+                        
+                        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                        dateLabel.textContent = new Date(dateString).toLocaleDateString('id-ID', options);
+
+                        showBookingsAndFreeTimeInput(dateString);
+                    });
 
                     calContainer.appendChild(dayCell);
                 }
             }
 
-            if (inputDate) {
-                inputDate.addEventListener('change', function() {
-                    if (this.value) {
-                        showBookedTimesForDate(this.value);
-                    }
+            function showBookingsAndFreeTimeInput(dateStr) {
+                const bookingsOnDate = bookedSlots.filter(item => item.date === dateStr);
+                
+                let html = `<div style="margin-bottom: 12px;">`;
+                html += `<div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #c4b5a5; margin-bottom: 6px; letter-spacing: 0.5px;">JADWAL TERISI DI TANGGAL INI:</div>`;
+                
+                if (bookingsOnDate.length > 0) {
+                    html += `<div style="display: flex; flex-direction: column; gap: 6px; max-height: 90px; overflow-y: auto;">`;
+                    bookingsOnDate.forEach(b => {
+                        let match = (b.package && b.package.duration) ? b.package.duration.match(/\d+/) : null;
+                        let dur = match ? parseInt(match[0]) : 2;
+                        
+                        let startTime = b.time.substring(0, 5);
+                        let [sh, sm] = startTime.split(':').map(Number);
+                        let endHour = sh + dur;
+                        let endTime = String(endHour).padStart(2, '0') + ':' + String(sm).padStart(2, '0');
+
+                        html += `<div style="padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.3); border-radius: 6px; font-size: 11px; color: #d4af37; font-weight: 600;">• ${startTime} - ${endTime} <span style="font-weight: normal; color: #a3988c; font-size: 10px;">(${dur} Jam)</span></div>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<div style="padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-size: 11px; color: #a3988c; font-style: italic;">Belum ada jadwal terisi.</div>`;
+                }
+                html += `</div>`;
+
+                // Bagian Pilih Jam Mulai
+                html += `<div>`;
+                html += `<div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #c4b5a5; margin-bottom: 6px; letter-spacing: 0.5px;">PILIH JAM MULAI PEMOTRETAN</div>`;
+                html += `<div style="position: relative;">`;
+                html += `<input type="time" id="rj" name="time" required style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(212,175,55,0.4); background: rgba(255,255,255,0.05); font-size: 13px; font-weight: 600; color: #f3ede3; box-sizing: border-box;" />`;
+                html += `</div>`;
+                html += `<div id="conflict-warning" style="display: none; margin-top: 6px; padding: 6px 8px; background: rgba(244,67,54,0.2); color: #ff8a80; border-radius: 6px; font-size: 10px; font-weight: 500;"></div>`;
+                html += `</div>`;
+
+                ketersediaanContent.innerHTML = html;
+
+                const timeInput = document.getElementById('rj');
+                timeInput.addEventListener('input', function() {
+                    validateTimeConflict(dateStr, this.value);
                 });
             }
 
-            function checkIfDateIsFullyBooked(dateStr) {
-                const existing = bookedSlots.filter(item => item.date === dateStr);
-                return existing.length >= 4;
-            }
+            function validateTimeConflict(dateStr, selectedTime) {
+                const warningBox = document.getElementById('conflict-warning');
+                if (!selectedTime) {
+                    warningBox.style.display = 'none';
+                    return;
+                }
 
-            function showBookedTimesForDate(selectedDate) {
-                const infoContainer = document.getElementById('booked-info-container');
-                const listText = document.getElementById('booked-list-text');
+                const selectPaket = document.getElementById('rp');
+                const selectedOption = selectPaket.options[selectPaket.selectedIndex];
+                let userDuration = 2; 
+                if (selectedOption && selectedOption.value) {
+                    let durStr = selectedOption.getAttribute('data-duration');
+                    let match = durStr ? durStr.match(/\d+/) : null;
+                    if (match) userDuration = parseInt(match[0]);
+                }
 
-                const existingReservations = bookedSlots.filter(item => item.date === selectedDate);
+                let newStart = new Date(`${dateStr} ${selectedTime}:00`).getTime();
+                let newEnd = newStart + (userDuration * 3600 * 1000);
 
-                if (existingReservations.length > 0) {
-                    infoContainer.style.display = 'block';
-                    let schedulesHtml = '<ul style="margin: 0; padding-left: 15px;">';
-                    existingReservations.forEach(res => {
-                        schedulesHtml +=
-                            `<li>Jam <strong>${res.time}</strong> (Durasi: ${res.duration || '2 Jam'})</li>`;
-                    });
-                    schedulesHtml += '</ul>';
-                    listText.innerHTML = schedulesHtml;
+                let isConflict = false;
+                const bookingsOnDate = bookedSlots.filter(item => item.date === dateStr);
+
+                for (let b of bookingsOnDate) {
+                    let match = (b.package && b.package.duration) ? b.package.duration.match(/\d+/) : null;
+                    let existDuration = match ? parseInt(match[0]) : 2;
+
+                    let existStart = new Date(`${b.date} ${b.time}`).getTime();
+                    let existEnd = existStart + (existDuration * 3600 * 1000);
+
+                    if (newStart < existEnd && newEnd > existStart) {
+                        isConflict = true;
+                        break;
+                    }
+                }
+
+                if (isConflict) {
+                    warningBox.textContent = "⚠️ Bentrok dengan jadwal lain! Durasi paket bersinggungan dengan sesi yang sudah ada.";
+                    warningBox.style.display = 'block';
                 } else {
-                    infoContainer.style.display = 'block';
-                    listText.innerHTML = '<em>Belum ada jadwal pemotretan di tanggal ini (Masih kosong).</em>';
+                    warningBox.style.display = 'none';
                 }
             }
 
@@ -432,46 +508,4 @@
             fetchBookedSlots();
         });
     </script>
-
-    <style>
-        .cal {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            margin-top: 15px;
-            text-align: center;
-        }
-
-        .cal-day {
-            padding: 10px 0;
-            font-size: 13px;
-            border-radius: 6px;
-            cursor: pointer;
-            background: #f4efe6;
-            color: #2c2825;
-            transition: all 0.2s;
-        }
-
-        .cal-day.empty {
-            background: transparent;
-            cursor: default;
-        }
-
-        .cal-day.available:hover {
-            background: #e6dec5;
-        }
-
-        .cal-day.selected {
-            background: #191512 !important;
-            color: #fff !important;
-            font-weight: bold;
-        }
-
-        .cal-day.booked {
-            background: #e0d0c0;
-            color: #999;
-            text-decoration: line-through;
-            cursor: not-allowed;
-        }
-    </style>
 @endsection

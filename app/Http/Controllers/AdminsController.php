@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Galery;
+use App\Models\Payment;
 use App\Models\PhotographyPackage;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
@@ -11,67 +12,143 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminsController extends Controller
 {
-/**
-     * Tampilan utama Dashboard Admin.
+    /**
+     * Tampilan Utama Dashboard Admin
      */
     public function Dashboard(Request $request)
     {
         $query = Reservation::with(['package', 'payment']);
 
-        // Filter Pencarian Nama atau Token
+        // 1. Filter Pencarian Nama atau Token
         if ($request->filled('q')) {
-            $keyword = $request->q;
-            $query->where(function($q) use ($keyword) {
+            $keyword = trim($request->q);
+            $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
                   ->orWhere('token', 'like', "%{$keyword}%");
             });
         }
 
-        // Filter Status Pembayaran
+        // 2. Filter Status Pembayaran / Reservasi
         if ($request->filled('status')) {
             $status = $request->status;
-            $query->where(function($q) use ($status) {
-                $q->whereHas('payment', function($subQ) use ($status) {
+            $query->where(function ($q) use ($status) {
+                $q->whereHas('payment', function ($subQ) use ($status) {
                     $subQ->where('status', $status);
                 });
+
+                // Menampung reservasi baru yang belum memiliki record payment
                 if ($status === 'Masa konsultasi') {
                     $q->orDoesntHave('payment');
                 }
             });
         }
 
+        // 3. Filter Tanggal dari Kalender
+        if ($request->filled('date')) {
+            $query->whereDate('date', $request->date);
+        }
+
         $reservations = $query->orderBy('date', 'desc')->get();
 
-        // Hitung Statistik (KP) dengan aman menggunakan collection filtering
+        // 4. Perhitungan Statistik 4 Kartu Dashboard
         $allReservations = Reservation::with('payment')->get();
-        $total = $allReservations->count();
-        
-        $reservasiBaru = $allReservations->filter(function($item) {
+
+        $reservasiBaru = $allReservations->filter(function ($item) {
             $status = optional($item->payment)->status;
             return !$status || $status === 'Masa konsultasi' || $status === 'Menunggu pembayaran DP';
         })->count();
 
-        $menungguVerifikasi = $allReservations->filter(function($item) {
+        $menungguVerifikasi = $allReservations->filter(function ($item) {
             $status = optional($item->payment)->status;
             return $status === 'Konfirmasi pembayaran' || $status === 'Verifikasi pelunasan';
         })->count();
 
-        $lunasSelesai = $allReservations->filter(function($item) {
-            $status = optional($item->payment)->status;
-            return $status === 'Selesai' || $status === 'Lunas';
+        $sesiMendatang = $allReservations->filter(function ($item) {
+            return $item->date >= now()->toDateString() && optional($item->payment)->status !== 'Dibatalkan';
         })->count();
 
-        return view('TemplateAdmin.dashboard', compact('reservations', 'total', 'reservasiBaru', 'menungguVerifikasi', 'lunasSelesai'));
+        $menungguHasilFoto = $allReservations->filter(function ($item) {
+            $status = optional($item->payment)->status;
+            return $status === 'Selesai' || $status === 'Menunggu pelunasan';
+        })->count();
+
+        return view('TemplateAdmin.dashboard', compact(
+            'reservations',
+            'reservasiBaru',
+            'menungguVerifikasi',
+            'sesiMendatang',
+            'menungguHasilFoto'
+        ));
     }
 
     /**
-     * API untuk mengambil jadwal yang sudah terisi (Kalender Admin)
+     * Update Status & Catatan Verifikasi Pembayaran dari Modal
      */
-    public function getSchedule(Request $request)
+    // 1. Update Status & Catatan Verifikasi Pembayaran
+public function updateVerification(Request $request, $id)
+{
+    $request->validate([
+        'status' => 'required|string',
+        'notes' => 'nullable|string',
+    ]);
+
+    $payment = \App\Models\Payment::where('reservation_id', $id)->first();
+    if ($payment) {
+        $payment->status = $request->status;
+        $payment->notes = $request->notes;
+        $payment->save();
+    }
+
+    return redirect()->route('admin.dashboard')->with('success', 'Status verifikasi pembayaran berhasil diperbarui.');
+}
+
+// 2. Update Nominal Tagihan & Total Dibayar
+public function updateTagihan(Request $request, $id)
+{
+    $request->validate([
+        'tagihan' => 'required|numeric',
+        'total_paid' => 'required|numeric',
+    ]);
+
+    $payment = \App\Models\Payment::where('reservation_id', $id)->first();
+    if ($payment) {
+        $payment->tagihan = $request->tagihan;
+        $payment->total_paid = $request->total_paid;
+        $payment->save();
+    }
+
+    return redirect()->route('admin.dashboard')->with('success', 'Data tagihan berhasil diperbarui.');
+}
+
+// 3. Update Detail Reservasi (Nama, WhatsApp, Tanggal, Jam)
+public function updateReservasiDetail(Request $request, $id)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'whatsapp' => 'required|string|max:20',
+        'date' => 'required|date',
+        'time' => 'required',
+    ]);
+
+    $reservation = \App\Models\Reservation::findOrFail($id);
+    $reservation->name = $request->name;
+    $reservation->whatsapp = $request->whatsapp;
+    $reservation->date = $request->date;
+    $reservation->time = $request->time;
+    $reservation->save();
+
+    return redirect()->route('admin.dashboard')->with('success', 'Detail data reservasi berhasil diperbarui.');
+}
+
+    /**
+     * API Endpoint Jadwal Terisi untuk Kalender Admin
+     */
+    public function getSchedule()
     {
-        $bookedDates = Reservation::whereHas('payment', function($q) {
+        $bookedDates = Reservation::whereHas('payment', function ($q) {
             $q->where('status', '!=', 'Dibatalkan');
-        })->orDoesntHave('payment')
+        })
+        ->orDoesntHave('payment')
         ->select('date', 'time', 'name', 'token')
         ->get();
 
@@ -81,9 +158,6 @@ class AdminsController extends Controller
         ]);
     }
 
-    /**
-     * Display LAPORAN.
-     */
     public function laporan()
     {
         return view('TemplateAdmin.laporan');
