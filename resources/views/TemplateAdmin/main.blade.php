@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('Assets/css/style.css') }}">
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
 </head>
 
 <body data-pg="dashboard" data-adm>
@@ -36,6 +37,7 @@
 
     </div>
     <script src="{{ asset('Assets/js/app.js') }}"></script>
+    @stack('scripts')
 
 </body>
 
