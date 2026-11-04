@@ -6,7 +6,6 @@ use App\Http\Controllers\PaketFotografiController;
 use App\Http\Controllers\RekeningController;
 use App\Http\Controllers\ReservasiController;
 use Illuminate\Support\Facades\Route;
-use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 // USER VIEW
 Route::get('/', [GaleriController::class, 'index']);
@@ -35,16 +34,11 @@ Route::get('/dashboard', [AdminsController::class, 'Dashboard'])->name('admin.da
 Route::put('/admin/reservasi/verify/{id}', [AdminsController::class, 'updateVerification'])->name('admin.reservasi.verify');
 Route::get('/admin/api/schedule', [AdminsController::class, 'getSchedule'])->name('admin.api.schedule');
 Route::get('/admin/laporan', [AdminsController::class, 'laporan'])->name('admin.laporan');
-Route::put('/admin/reservasi/verify/{id}', [AdminsController::class, 'updateVerification'])->name('admin.reservasi.verify');
 Route::put('/admin/reservasi/tagihan/{id}', [AdminsController::class, 'updateTagihan'])->name('admin.reservasi.tagihan');
 Route::put('/admin/reservasi/detail/{id}', [AdminsController::class, 'updateReservasiDetail'])->name('admin.reservasi.detail');
 
 // Route API untuk Dashboard Admin (Tanpa Middleware sesuai permintaan)
 Route::get('/admin/api/reservations', [AdminsController::class, 'getReservations'])->name('admin.api.reservations');
-Route::get('/admin/api/schedule', [AdminsController::class, 'getSchedule'])->name('admin.api.schedule');
-
-// Route Laporan (Opsional jika tombol laporan di-klik)
-Route::get('/admin/laporan', [AdminsController::class, 'laporan'])->name('admin.laporan');
 
 // KELOLA REKENING
 Route::get('/rekening', [RekeningController::class, 'index'])->name('rekening.index');

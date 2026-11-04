@@ -9,6 +9,7 @@ use App\Models\Reservation;
 use App\Models\StudioProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AdminsController extends Controller
 {
@@ -158,9 +159,63 @@ public function updateReservasiDetail(Request $request, $id)
         ]);
     }
 
-    public function laporan()
+    public function laporan(Request $request)
     {
-        return view('TemplateAdmin.laporan');
+        $statuses = [
+            'Masa konsultasi',
+            'Menunggu pembayaran DP',
+            'Konfirmasi pembayaran',
+            'Menunggu pelunasan',
+            'Verifikasi pelunasan',
+            'Selesai',
+            'Dibatalkan',
+        ];
+        $filters = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in([...$statuses, 'tanpa_pembayaran'])],
+        ]);
+
+        $query = Reservation::with(['package', 'payment']);
+
+        if (!empty($filters['from'])) {
+            $query->whereDate('date', '>=', $filters['from']);
+        }
+
+        if (!empty($filters['to'])) {
+            $query->whereDate('date', '<=', $filters['to']);
+        }
+
+        if (!empty($filters['q'])) {
+            $keyword = trim($filters['q']);
+            if ($keyword !== '') {
+                $query->where(function ($reservationQuery) use ($keyword) {
+                    $reservationQuery->where('name', 'like', "%{$keyword}%")
+                        ->orWhere('token', 'like', "%{$keyword}%");
+                });
+            }
+        }
+
+        if (($filters['status'] ?? null) === 'tanpa_pembayaran') {
+            $query->doesntHave('payment');
+        } elseif (!empty($filters['status'])) {
+            $query->whereHas('payment', function ($paymentQuery) use ($filters) {
+                $paymentQuery->where('status', $filters['status']);
+            });
+        }
+
+        $reservations = $query->orderByDesc('date')->get();
+        $totalTagihan = $reservations->sum(fn (Reservation $reservation) => $reservation->payment?->tagihan ?? 0);
+        $totalDiterima = $reservations->sum(fn (Reservation $reservation) => $reservation->payment?->total_paid ?? 0);
+
+        return view('TemplateAdmin.laporan', compact(
+            'reservations',
+            'filters',
+            'statuses',
+            'totalTagihan',
+            'totalDiterima'
+        ));
     }
 
 
