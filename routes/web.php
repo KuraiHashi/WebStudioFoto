@@ -52,6 +52,8 @@ Route::delete('/rekening/{rekening}', [RekeningController::class, 'destroy'])->n
 // ROUTE GALERY //
 Route::get('/admin/galery', [AdminsController::class, 'galeryindex'])->name('admin.galery');
 Route::post('/admin/galery/upload', [AdminsController::class, 'storeGalery'])->name('admin.galery.store');
+Route::put('/admin/galery/display-sections', [AdminsController::class, 'updateGaleryDisplaySections'])
+    ->name('admin.galery.display-sections');
 Route::delete('/admin/galery/delete', [AdminsController::class, 'destroyGalery'])->name('admin.galery.destroy');
 
 // ROUTE PROFILE STUDIO //

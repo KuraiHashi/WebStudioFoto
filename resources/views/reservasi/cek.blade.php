@@ -105,7 +105,21 @@
                             <i>Nama</i><span>{{ $reservation->name }}</span>
                             <i>Paket</i><span>{{ $reservation->package->name }}</span>
                             <i>Jadwal</i><span>{{ $reservation->date }} ({{ $reservation->time }})</span>
-                            <i>Lokasi</i><span>{{ $reservation->location }}</span>
+                            <i>Lokasi</i>
+                            <span>
+                                @if (\Illuminate\Support\Str::startsWith($reservation->location, [
+                                        'https://www.google.com/maps/',
+                                        'https://maps.google.com/maps/',
+                                        'https://maps.app.goo.gl/',
+                                        'https://goo.gl/maps/',
+                                    ]))
+                                    <a href="{{ $reservation->location }}" target="_blank" rel="noopener noreferrer">
+                                        Buka lokasi di Google Maps
+                                    </a>
+                                @else
+                                    {{ $reservation->location }}
+                                @endif
+                            </span>
                             <i>Total Tagihan</i><span>Rp {{ number_format($payment->tagihan, 0, ',', '.') }}</span>
                             <i>Sudah Dibayar</i><span>Rp {{ number_format($payment->total_paid, 0, ',', '.') }}</span>
                             <i>Sisa Kekurangan</i><span>Rp {{ number_format(max(0, $payment->tagihan - $payment->total_paid), 0, ',', '.') }}</span>

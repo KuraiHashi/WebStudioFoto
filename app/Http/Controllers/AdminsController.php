@@ -421,8 +421,8 @@ class AdminsController extends Controller
         }
 
         $reservations = $query->orderByDesc('date')->get();
-        $totalTagihan = $reservations->sum(fn(Reservation $reservation) => $reservation->payment?->tagihan ?? 0);
-        $totalDiterima = $reservations->sum(fn(Reservation $reservation) => $reservation->payment?->total_paid ?? 0);
+        $totalTagihan = $reservations->sum(fn (Reservation $reservation) => $reservation->payment?->tagihan ?? 0);
+        $totalDiterima = $reservations->sum(fn (Reservation $reservation) => $reservation->payment?->total_paid ?? 0);
 
         return view('TemplateAdmin.laporan', compact(
             'reservations',
@@ -448,22 +448,47 @@ class AdminsController extends Controller
     public function storeGalery(Request $request)
     {
         $request->validate([
+            'display_section' => ['required', Rule::in(['story', 'selected'])],
+            'photos' => ['required', 'array', 'min:1'],
             'photos.*' => 'required|image|mimes:jpg,jpeg,png|max:5120', // Maks 5MB per file
         ]);
 
-        if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $file) {
-                // Simpan ke storage/app/public/galeri
-                $path = $file->store('galeri', 'public');
+        foreach ($request->file('photos') as $file) {
+            $path = $file->store('galeri', 'public');
 
-                // Simpan path ke database
-                Galery::create([
-                    'filename' => $path,
-                ]);
-            }
+            Galery::create([
+                'filename' => $path,
+                'display_section' => $request->input('display_section'),
+            ]);
         }
 
         return redirect()->back()->with('success', 'Foto berhasil diunggah!');
+    }
+
+    public function updateGaleryDisplaySections(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'display_sections' => ['required', 'array', 'min:1'],
+            'display_sections.*' => ['required', Rule::in(['story', 'selected'])],
+        ]);
+
+        $displaySections = $validated['display_sections'];
+        $photos = Galery::whereKey(array_keys($displaySections))->get()->keyBy('id');
+
+        if ($photos->count() !== count($displaySections)) {
+            throw ValidationException::withMessages([
+                'display_sections' => 'Satu atau beberapa foto tidak ditemukan.',
+            ]);
+        }
+
+        DB::transaction(function () use ($displaySections, $photos): void {
+            foreach ($displaySections as $photoId => $section) {
+                $photo = $photos->get($photoId);
+                $photo->update(['display_section' => $section]);
+            }
+        });
+
+        return redirect()->back()->with('success', 'Penempatan foto berhasil disimpan.');
     }
 
     /**
