@@ -21,6 +21,13 @@
                     <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,image/*" multiple required />
                 </label>
             </div>
+            <div class="fld">
+                <label for="upload-display-section">Tampilkan foto yang diunggah di</label>
+                <select id="upload-display-section" name="display_section" required>
+                    <option value="story" @selected(old('display_section', 'story') === 'story')>Kisah Terbingkai</option>
+                    <option value="selected" @selected(old('display_section') === 'selected')>Karya Terpilih</option>
+                </select>
+            </div>
             <div class="acts">
                 <button type="submit" class="btn ink">
                     Unggah
@@ -30,24 +37,38 @@
 
         {{-- Daftar Foto Galeri --}}
         <div class="card">
-            <h3>Foto galeri</h3>
-            <div class="mg big" id="gg">
-                @forelse($galeries as $item)
-                    <div class="gph">
-                        <input type="checkbox" class="chk" name="selected_photos[]" value="{{ $item->id }}"
-                            aria-label="Pilih foto" />
-                        <div class="ph"
-                            style="background-image: url('{{ asset('storage/' . $item->filename) }}'); background-size: cover; background-position: center;">
+            <form action="{{ route('admin.galery.display-sections') }}" method="POST">
+                @csrf
+                @method('PUT')
+                <h3>Atur penempatan foto</h3>
+                <p class="note" style="margin-bottom: 18px">Setiap foto dapat ditempatkan di Kisah Terbingkai atau Karya Terpilih.</p>
+                <div class="mg big" id="gg">
+                    @forelse($galeries as $item)
+                        <div class="gph">
+                            <input type="checkbox" class="chk" value="{{ $item->id }}" aria-label="Pilih foto untuk dihapus" />
+                            <div class="ph"
+                                style="background-image: url('{{ asset('storage/' . $item->filename) }}'); background-size: cover; background-position: center;">
+                            </div>
+                            <label class="gallery-placement" for="gallery-section-{{ $item->id }}">
+                                Tampilkan di
+                                <select id="gallery-section-{{ $item->id }}" name="display_sections[{{ $item->id }}]">
+                                    <option value="story" @selected($item->display_section === 'story')>Kisah Terbingkai</option>
+                                    <option value="selected" @selected($item->display_section === 'selected')>Karya Terpilih</option>
+                                </select>
+                            </label>
                         </div>
+                    @empty
+                        <p style="grid-column: 1 / -1; color: #777;">Belum ada foto di galeri.</p>
+                    @endforelse
+                </div>
+                @if ($galeries->isNotEmpty())
+                    <div class="acts">
+                        <button type="submit" class="btn sm ink">Simpan penempatan</button>
                     </div>
-                @empty
-                    <p style="grid-column: 1 / -1; color: #777;">Belum ada foto di galeri.</p>
-                @endforelse
-            </div>
-            <div class="acts">
-                <button type="button" class="btn sm no" id="btn-delete-selected">
-                    Hapus terpilih
-                </button>
+                @endif
+            </form>
+            <div class="acts" style="margin-top: 16px">
+                <button type="button" class="btn sm no" id="btn-delete-selected">Hapus terpilih</button>
             </div>
         </div>
     </main>
@@ -69,8 +90,8 @@
         @if ($errors->any())
             Swal.fire({
                 icon: 'error',
-                title: 'Gagal Mengunggah!',
-                text: 'Cek kembali foto anda, pastikan foto tidak lebih dari 5mb',
+                title: 'Tidak dapat menyimpan perubahan',
+                text: @json($errors->first()),
                 confirmButtonText: 'OK'
             });
         @endif

@@ -9,6 +9,7 @@ class Galery extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['filename'];
+    protected $fillable = ['filename', 'display_section'];
+
     protected $table = 'galeries';
 }

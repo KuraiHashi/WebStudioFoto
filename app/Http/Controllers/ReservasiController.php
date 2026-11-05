@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\PaymentHistory;
 use App\Models\PhotographyPackage;
+use App\Models\Rekening;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
 use Illuminate\Http\Request;
@@ -23,9 +24,12 @@ class ReservasiController extends Controller
     public function index(Request $request)
     {
         $packages = PhotographyPackage::all();
+        $weddingPackageIds = $packages
+            ->filter(fn (PhotographyPackage $package): bool => $this->isWeddingPackage($package))
+            ->modelKeys();
         $selectedPackageId = $request->query('package_id');
 
-        return view('reservasi.reservasi', compact('packages', 'selectedPackageId'));
+        return view('reservasi.reservasi', compact('packages', 'selectedPackageId', 'weddingPackageIds'));
     }
 
     /**
@@ -42,8 +46,8 @@ class ReservasiController extends Controller
                 return [
                     'date' => $res->date,
                     'time' => $res->time,
-                    'duration' => $res->duration,
-                    'is_wedding' => $res->package->is_wedding ?? false,
+                    'duration' => $res->package?->duration ?? $res->duration,
+                    'is_wedding' => $this->isWeddingPackage($res->package),
                 ];
             });
 
@@ -59,10 +63,16 @@ class ReservasiController extends Controller
             'photography_package_id' => 'required|exists:photography_packages,id',
             'name' => 'required|string|max:255',
             'whatsapp' => 'required|string|max:20',
-            'date' => 'required|date',
-            'time' => 'required',
+            'date' => 'required|date|after_or_equal:today',
+            'time' => 'required|date_format:H:i',
             'duration' => 'required|string',
-            'location' => 'required|string',
+            'location' => [
+                'required',
+                'string',
+                'max:255',
+                'url',
+                'regex:/^https:\/\/(?:(?:www\.)?google\.com\/maps\/|maps\.google\.com\/|maps\.app\.goo\.gl\/|goo\.gl\/maps\/)/i',
+            ],
             'request_consultation' => 'nullable|boolean',
             'consultation_topic' => 'nullable|string',
             'consultation_custom_topic' => 'nullable|string',
@@ -72,81 +82,49 @@ class ReservasiController extends Controller
             'source_from' => 'nullable|string',
         ]);
 
-        // Auto-generate Token
+        $package = PhotographyPackage::findOrFail($validated['photography_package_id']);
+        $validated['duration'] = $package->duration;
         $validated['token'] = 'RSV-'.strtoupper(Str::random(6));
+        $isWeddingPackage = $this->isWeddingPackage($package);
 
-        // 1. Ambil durasi paket yang dipilih (misal: "2 Jam" -> ambil angka 2)
-        $package = PhotographyPackage::findOrFail($request->photography_package_id);
         preg_match('/\d+/', $package->duration, $matches);
-        $durationHours = isset($matches[0]) ? (int) $matches[0] : 2; // Default 2 jam jika tidak ketemu
+        $durationHours = isset($matches[0]) ? (int) $matches[0] : 2;
+        $newStart = strtotime($validated['date'].' '.$validated['time']);
+        $newEnd = $newStart + ($durationHours * 3600);
+        $startMinute = ((int) date('G', $newStart) * 60) + (int) date('i', $newStart);
+        $now = now();
+        $isPastTimeToday = $validated['date'] === $now->toDateString() && $newStart <= $now->timestamp;
 
-        // Hitung waktu mulai dan waktu selesai reservasi baru
-        $newStart = strtotime($request->date.' '.$request->time);
-        $newEnd = $newStart + ($durationHours * 3600); // 3600 detik = 1 jam
+        if ($startMinute < 360 || $startMinute > 1080 || $startMinute % 30 !== 0 ||
+            ($isPastTimeToday && ! $isWeddingPackage)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['time' => 'Pilih waktu mulai setiap 30 menit antara pukul 06.00–18.00.']);
+        }
 
-        // 2. Cek apakah ada reservasi aktif pada tanggal yang sama yang jamnya beririsan
-        $conflictingReservations = Reservation::where('date', $request->date)
+        $existingReservations = Reservation::where('date', $validated['date'])
             ->whereHas('payment', function ($q) {
                 $q->where('status', '!=', 'Dibatalkan');
             })
             ->with('package')
             ->get();
 
-        foreach ($conflictingReservations as $existing) {
-            // Hitung durasi reservasi yang sudah ada di database
-            preg_match('/\d+/', $existing->package->duration ?? '2', $matchExist);
-            $existDuration = isset($matchExist[0]) ? (int) $matchExist[0] : 2;
-
-            $existStart = strtotime($existing->date.' '.$existing->time);
-            $existEnd = $existStart + ($existDuration * 3600);
-
-            // Rumus deteksi bentrok waktu (Overlapping check)
-            if ($newStart < $existEnd && $newEnd > $existStart) {
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors(['date' => 'Maaf, tanggal tersebut sudah dibooking penuh untuk acara Wedding. Tanggal tertutup untuk semua reservasi.']);
-            }
-
-            // ATURAN 2: Jika user saat ini ingin membooking Paket Wedding, 
-            // tapi di tanggal tersebut sudah ada reservasi paket reguler lain, tolak.
-            if ($newPackage->is_wedding) {
+        foreach ($existingReservations as $existing) {
+            if ($this->isWeddingPackage($package) || $this->isWeddingPackage($existing->package)) {
                 return redirect()->back()
                     ->withInput()
                     ->withErrors(['date' => 'Maaf, tanggal tersebut sudah memiliki jadwal pemotretan lain. Paket Wedding memerlukan tanggal yang sepenuhnya kosong.']);
             }
-        }
 
-        // ATURAN 3: Jika sama-sama paket reguler (non-wedding), cek bentrok jam (overlapping) berdasarkan durasi
-        if (!$newPackage->is_wedding) {
-            preg_match('/\d+/', $newPackage->duration, $matchNew);
-            $newHours = isset($matchNew[0]) ? (int)$matchNew[0] : 1;
-            
-            // Konversi waktu baru (pastikan format jam digabung tanggal dengan benar)
-            $newStart = strtotime($request->date . ' ' . $request->time);
-            $newEnd = $newStart + ($newHours * 3600);
+            preg_match('/\d+/', $existing->package?->duration ?? '2', $existingMatches);
+            $existingDurationHours = isset($existingMatches[0]) ? (int) $existingMatches[0] : 2;
+            $existStart = strtotime($existing->date.' '.$existing->time);
+            $existEnd = $existStart + ($existingDurationHours * 3600);
 
-            // LOGGING untuk debugging di laravel.log
-            \Illuminate\Support\Facades\Log::info("Mencoba Booking: {$request->date} jam {$request->time} (Start: $newStart, End: $newEnd)");
-
-            foreach ($existingReservations as $exist) {
-                if ($exist->package->is_wedding ?? false) continue;
-
-                preg_match('/\d+/', $exist->package->duration ?? '1', $matchExist);
-                $existHours = isset($matchExist[0]) ? (int)$matchExist[0] : 1;
-
-                $existStart = strtotime($exist->date . ' ' . $exist->time);
-                $existEnd = $existStart + ($existHours * 3600);
-
-                \Illuminate\Support\Facades\Log::info("Membandingkan dengan Eksisting: {$exist->date} jam {$exist->time} (Start: $existStart, End: $existEnd)");
-
-                // Rumus irisan waktu (Overlapping check)
-                if ($newStart < $existEnd && $newEnd > $existStart) {
-                    \Illuminate\Support\Facades\Log::warning("BENTROK TERDETEKSI! Menolak reservasi.");
-                    
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['time' => 'Maaf, jam pemotretan (' . $request->time . ') bentrok dengan jadwal lain yang sudah ada di hari ini (' . $exist->time . ' - durasi ' . $exist->package->duration . '). Silakan pilih jam lain.']);
-                }
+            if ($newStart <= $existEnd && $newEnd > $existStart) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['time' => 'Maaf, jam pemotretan tersebut bentrok dengan jadwal lain yang sudah ada. Silakan pilih jam lain.']);
             }
         }
 
@@ -161,7 +139,7 @@ class ReservasiController extends Controller
             'reservation_id' => $reservasi->id,
             'token' => $reservasi->token,
             'status' => $initialStatus,
-            'tagihan' => $newPackage->price,
+            'tagihan' => $package->price,
             'total_paid' => 0,
             'description' => $isConsultation
                 ? "Konsultasi & Paket: {$package->name} (Rp ".number_format($package->price, 0, ',', '.').')'
@@ -252,8 +230,7 @@ class ReservasiController extends Controller
         $payment = null;
         $studio = StudioProfile::first();
 
-        // Ambil daftar rekening aktif dari database
-        $rekenings = Rekening::all(); // Atau Rekening::where('is_active', true)->get() jika ada kolom status aktif
+        $rekenings = Rekening::all();
 
         if ($token) {
             $payment = Payment::with(['reservation.package', 'reservation'])
@@ -351,5 +328,20 @@ class ReservasiController extends Controller
             'is_lunas' => $isLunas,
             'token_reservasi' => $paymentToken,
         ]);
+    }
+
+    private function isWeddingPackage(?PhotographyPackage $package): bool
+    {
+        if ($package === null) {
+            return false;
+        }
+
+        $normalizedName = preg_replace('/[\s_-]+/', ' ', strtolower($package->name));
+
+        if (preg_match('/\bpre\s*wedding\b/', $normalizedName) === 1) {
+            return false;
+        }
+
+        return (bool) $package->is_wedding || preg_match('/\bwedding\b/', $normalizedName) === 1;
     }
 }
