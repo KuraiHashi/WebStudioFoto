@@ -25,6 +25,12 @@
                 </div>
             @endif
 
+            @if(session('success'))
+                <div class="alert alert-success" style="margin-bottom: 20px; padding: 12px; background: #d4edda; color: #155724; border-radius: 4px;">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <!-- Form Input Token -->
             <form action="{{ route('reservasi.result') }}" method="GET">
                 <div class="fc" style="padding: 24px 30px; background: #fbf9f5; border: 1px solid #e6dec5; border-radius: 8px; margin-top: 20px;">
@@ -133,16 +139,39 @@
 
                         <p class="note" id="r-msg" style="margin-top: 20px;">{{ $statusMessage }}</p>
 
-                        <div class="acts" style="margin-top: 24px; display: flex; gap: 10px;">
+                        <div class="acts" style="margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap;">
                             @if($canPay)
                                 <a href="{{ route('reservasi.pembayaran', ['token' => $payment->token]) }}" class="btn ink" style="background: #191512; color: #fff; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-size: 14px; font-weight: 500;">
                                     {{ $payment->status === 'Menunggu pembayaran DP' ? 'Bayar DP' : 'Bayar pelunasan' }}
                                 </a>
                             @endif
-                            @if($payment->status === 'Selesai' && $reservation->photo_status === 'siap' && $reservation->photo_delivery_url)
+                            @if($payment->status === 'Selesai' && $reservation->photo_delivery_url)
                                 <a href="{{ $reservation->photo_delivery_url }}" class="btn ink" target="_blank" rel="noopener noreferrer">Buka hasil foto</a>
                             @endif
+                            @if($payment->status === 'Selesai' && $reservation->edited_photo_url)
+                                <a href="{{ $reservation->edited_photo_url }}" class="btn ink" target="_blank" rel="noopener noreferrer">Lihat hasil edit</a>
+                            @endif
                         </div>
+
+                        @if($payment->status === 'Selesai' && $reservation->photo_delivery_url)
+                            <div class="fc" style="margin-top: 20px; padding: 18px 20px; background: #fff; border: 1px solid #e6dec5; border-radius: 8px;">
+                                <h4 style="margin-top: 0; margin-bottom: 10px;">Permintaan edit foto</h4>
+                                @if($reservation->edit_request_message)
+                                    <p class="note" style="margin-bottom: 12px;">Permintaan Anda: <strong>{{ $reservation->edit_request_message }}</strong></p>
+                                @endif
+                                <form action="{{ route('reservasi.request-edit') }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="token" value="{{ $payment->token }}">
+                                    <div class="fld" style="margin-bottom: 12px;">
+                                        <label for="edit-request-message">Tuliskan foto mana yang ingin diedit</label>
+                                        <textarea id="edit-request-message" name="edit_request_message" rows="3" maxlength="500" required placeholder="Contoh: Saya ingin edit foto dengan nama file nikah agar lebih natural dan crop lebih rapih." style="width: 100%; padding: 12px; border: 1px solid #d1c7bd; border-radius: 6px; font-family: inherit;">{{ old('edit_request_message', $reservation->edit_request_message ?? '') }}</textarea>
+                                    </div>
+                                    <button type="submit" class="btn ink" style="background: #191512; color: #fff; padding: 12px 24px; border-radius: 30px; border: none; font-weight: 500; cursor: pointer;">
+                                        Kirim permintaan edit
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
 
                     @if($reservation->testimonial)
@@ -162,7 +191,7 @@
                                 <fieldset class="fld testimonial-rating">
                                     <legend class="testimonial-rating__legend">Rating</legend>
                                     <div class="testimonial-rating__stars" role="radiogroup" aria-label="Pilih rating">
-                                        @for($rating = 1; $rating <= 5; $rating++)
+                                        @for($rating = 5; $rating >= 1; $rating--)
                                             <input class="testimonial-rating__input" type="radio" id="rating-{{ $rating }}" name="rating" value="{{ $rating }}" required @checked((int) old('rating') === $rating)>
                                             <label class="testimonial-rating__star" for="rating-{{ $rating }}" aria-label="{{ $rating }} bintang">
                                                 <span aria-hidden="true">★</span>

@@ -25,11 +25,16 @@ section{padding:120px 0}
 nav{position:fixed;inset:0 0 auto;z-index:30;transition:.4s;color:var(--paper)}
 nav .wrap{display:flex;align-items:center;gap:30px;height:78px}
 nav.s{background:rgba(20,17,14,.92);backdrop-filter:blur(14px)}
-.logo{font-family:var(--serif);font-size:28px;font-style:italic;margin-right:auto;display:flex;align-items:center;gap:10px}
-.logo i{width:14px;height:14px;background:var(--gold);border-radius:60% 40% 55% 45%/45% 55% 45% 55%;display:inline-block}
-.logo small{font:400 9px var(--sans);letter-spacing:.4em;text-transform:uppercase;font-style:normal;opacity:.7}
+.logo{margin-right:auto;display:flex;align-items:center;gap:12px;color:var(--paper);transition:opacity .25s ease}
+.logo:hover{opacity:.9}
+.logo-brand{display:flex;align-items:center;justify-content:center;flex:none;color:var(--paper)}
+.logo-icon{display:block;width: 80px;height:auto;color:var(--paper)}
+.logo-wordmark{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1}
+.logo-script{font-family:"Segoe Print","Bradley Hand",cursive;font-size:clamp(1.6rem,1.55vw,2.8rem);font-weight:700;font-style:italic;letter-spacing:-.06em;color:var(--paper);transform:translateY(4px)}
+.logo-subtitle{font-size:clamp(.45rem,.6vw,.9rem);letter-spacing:.42em;text-transform:uppercase;color:var(--paper);opacity:.9;margin-top:8px;transform:translateY(2px)}
 nav .btn{white-space:nowrap}
-nav .l{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.8}nav .l:hover{opacity:1;color:var(--gold)}
+nav .l{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.8;transition:.25s ease}
+nav .l:hover,nav .l.active{opacity:1;color:var(--gold)}
 
 /* Foto placeholder (ganti dengan <img> asli) */
 .ph{background:linear-gradient(160deg,var(--c1,#c9a46c),var(--c2,#5b4129));position:relative;overflow:hidden}
@@ -108,6 +113,7 @@ footer .social-link:focus-visible{outline:2px solid var(--gold);outline-offset:3
 /* Pop up */
 .ov{position:fixed;inset:0;background:rgba(20,17,14,.62);backdrop-filter:blur(8px);display:grid;place-items:center;padding:20px;z-index:60;opacity:0;pointer-events:none;transition:.35s}
 .ov.on{opacity:1;pointer-events:auto}
+.ov .md{justify-self:center;align-self:center}
 .md{background:var(--paper);width:100%;max-width:500px;max-height:90vh;overflow:auto;border-radius:30px 30px 30px 84px;padding:38px 36px 32px;transform:translateY(24px) scale(.98);transition:.45s cubic-bezier(.2,.8,.2,1);position:relative;color:var(--ink)}
 .ov.on .md{transform:none}.md.w{max-width:700px}
 .md .x{position:absolute;right:22px;top:20px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:none;cursor:pointer;font-size:18px;color:var(--ink)}
@@ -222,8 +228,13 @@ footer .social-link:focus-visible{outline:2px solid var(--gold);outline-offset:3
 .action-btn-group .btn{padding:7px 10px;font-size:10px;letter-spacing:.08em;white-space:nowrap}
 .workflow-substatus{display:block;margin-top:7px;color:var(--mist);font-size:11px}
 .workflow-instruction{margin:18px 0;padding:14px 16px;border-left:3px solid var(--bronze);background:#f0e7d8;border-radius:0 12px 12px 0}
+.receipt-preview-container{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.receipt-label{display:block;margin-bottom:10px;color:var(--mist);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.receipt-preview-container a{display:block;text-align:center}
+.receipt-preview-img{display:block;width:auto;max-width:100%;max-height:320px;margin:0 auto;border-radius:6px;object-fit:contain}
 .tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px;font-size:13.5px}
 #rtab{min-width:760px}
+#rtab th:last-child{text-align:left}
 #rtab td[data-l="Kode"],#rtab td[data-l="Jadwal"]{white-space:nowrap}
 th{font:500 10.5px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--mist);text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
 td{padding:14px 8px;border-bottom:1px solid var(--line)}
@@ -317,7 +328,7 @@ html{-webkit-text-size-adjust:100%}
  .pc .rn{font-size:44px}.code-big{font-size:30px}.code input{font-size:20px}
  .top h2{font-size:34px}.kp b{font-size:34px}.kp div,.kp a.kp-card{padding:16px}
  .copy{flex-direction:column;gap:6px;align-items:center}
- .ov{place-items:end center;padding:0}
+ .ov{place-items:center;padding:12px}
  .md{max-width:100%!important;border-radius:28px 28px 0 0;max-height:92vh;padding:32px 22px 28px}
  .steps span{font-size:8.5px;letter-spacing:.04em;margin-right:4px}
  .pi{flex-wrap:wrap}.auth .form h2{font-size:38px}

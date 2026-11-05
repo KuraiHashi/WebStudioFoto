@@ -32,6 +32,6 @@ class Payment extends Model
 
     public function canSubmitTestimonial(): bool
     {
-        return $this->status === 'Selesai';
+        return $this->status === 'Selesai' && ! empty($this->reservation?->edited_photo_url);
     }
 }

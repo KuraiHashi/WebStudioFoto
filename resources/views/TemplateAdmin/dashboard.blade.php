@@ -151,6 +151,8 @@
                                                 data-session-ended="{{ $item->canBeMarkedComplete() ? '1' : '0' }}"
                                                 data-photo-status="{{ $item->photo_status }}"
                                                 data-photo-url="{{ $item->photo_delivery_url ?? '' }}"
+                                                data-edit-request="{{ e($item->edit_request_message ?? '') }}"
+                                                data-edited-photo-url="{{ $item->edited_photo_url ?? '' }}"
                                                 data-verify-action="{{ route('admin.reservasi.verify', $item->id) }}"
                                                 data-session-action="{{ route('admin.reservasi.session-complete', $item->id) }}"
                                                 data-photo-action="{{ route('admin.reservasi.photos', $item->id) }}">
@@ -260,6 +262,13 @@
                 @csrf
                 @method('PUT')
                 <div class="fld">
+                    <label for="photoKind">Jenis tautan</label>
+                    <select name="photo_kind" id="photoKind" required>
+                        <option value="original">Foto asli / belum diedit</option>
+                        <option value="edited">Hasil edit foto</option>
+                    </select>
+                </div>
+                <div class="fld field-spacing-top">
                     <label for="photoDeliveryUrl">Tautan hasil foto (Google Drive)</label>
                     <input type="url" name="photo_delivery_url" id="photoDeliveryUrl" placeholder="https://drive.google.com/..." required />
                 </div>
@@ -352,7 +361,7 @@
         const el = document.getElementById(id);
         if (el) {
             el.classList.add('on');
-            el.style.display = 'flex';
+            el.style.display = 'grid';
         }
     }
 
@@ -489,11 +498,24 @@
                     ? 'block'
                     : 'none';
 
+                const photoKind = document.getElementById('photoKind');
+                const photoRequest = btn.dataset.editRequest || '';
+                const editedPhotoUrl = btn.dataset.editedPhotoUrl || '';
                 const canManagePhotos = btn.dataset.status === 'Selesai'
-                    && btn.dataset.photoStatus !== 'siap';
-                document.getElementById('photoDeliveryUrl').value = btn.dataset.photoUrl;
-                document.getElementById('photoWorkflowNote').textContent =
-                    'Setelah disimpan, pelanggan dapat membuka tautan ini dari halaman cek reservasi.';
+                    && (btn.dataset.photoStatus !== 'siap' || photoRequest || editedPhotoUrl);
+                photoKind.replaceChildren();
+                photoKind.add(new Option('Foto asli / belum diedit', 'original'));
+                if (photoRequest) {
+                    photoKind.add(new Option('Hasil edit foto yang diminta pelanggan', 'edited'));
+                }
+                photoKind.value = photoRequest ? 'edited' : 'original';
+                document.getElementById('photoDeliveryUrl').value = photoRequest ? (editedPhotoUrl || '') : (btn.dataset.photoUrl || '');
+                if (photoRequest) {
+                    document.getElementById('photoWorkflowNote').textContent = `Permintaan edit pelanggan: "${photoRequest}". Setelah dikirim, pelanggan akan melihat tombol “lihat hasil edit”.`;
+                } else {
+                    document.getElementById('photoWorkflowNote').textContent =
+                        'Setelah disimpan, pelanggan dapat membuka tautan ini dari halaman cek reservasi.';
+                }
                 formPhotoWorkflow.action = btn.dataset.photoAction;
                 formPhotoWorkflow.style.display = canManagePhotos ? 'block' : 'none';
 

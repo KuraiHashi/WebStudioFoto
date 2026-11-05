@@ -372,6 +372,50 @@ class DashboardTest extends TestCase
             ->assertSee('https://drive.google.com/folder');
     }
 
+    public function test_customer_can_request_photo_edit_and_admin_can_send_the_edited_link(): void
+    {
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'PHOTO-EDIT-001',
+            'Pelanggan',
+            now()->subDay()->toDateString(),
+            'Selesai'
+        );
+        $reservation->payment->update(['total_paid' => 1000000]);
+        $reservation->forceFill([
+            'photo_status' => 'siap',
+            'photo_delivery_url' => 'https://drive.google.com/original',
+        ])->save();
+
+        $this->post(route('reservasi.request-edit'), [
+            'token' => $reservation->token,
+            'edit_request_message' => 'Sertakan nama file foto mana yang mau di edit',
+        ])->assertRedirect(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertSessionHas('success', 'Permintaan edit foto berhasil dikirim ke admin.');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'edit_request_message' => 'Sertakan nama file foto mana yang mau di edit',
+        ]);
+
+        $this->put(route('admin.reservasi.photos', $reservation), [
+            'photo_kind' => 'edited',
+            'photo_delivery_url' => 'https://drive.google.com/edited',
+        ])->assertRedirect(route('admin.dashboard'))
+            ->assertSessionHas('success', 'Tautan hasil edit foto berhasil dikirim kepada pelanggan.');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'edited_photo_url' => 'https://drive.google.com/edited',
+        ]);
+
+        $this->get(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Lihat hasil edit')
+            ->assertSee('https://drive.google.com/edited');
+    }
+
     public function test_paid_reservation_goes_directly_to_photo_queue_without_waiting_for_session_complete(): void
     {
         $package = $this->createPackage();
