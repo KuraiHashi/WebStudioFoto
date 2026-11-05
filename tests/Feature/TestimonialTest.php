@@ -61,20 +61,18 @@ class TestimonialTest extends TestCase
             ->assertDontSee('name="message"', false);
     }
 
-    public function test_customer_can_submit_a_testimonial_as_soon_as_reservation_status_is_complete(): void
+    public function test_customer_cannot_submit_a_testimonial_before_edited_photos_are_delivered(): void
     {
         $payment = $this->createEligiblePayment();
         $payment->reservation->update([
-            'date' => now()->addMonth()->toDateString(),
-            'session_completed_at' => null,
             'photo_status' => 'diproses',
-            'photo_delivery_url' => null,
+            'edited_photo_url' => null,
         ]);
         $resultUrl = route('reservasi.result', ['token' => $payment->token]);
 
         $this->get($resultUrl)
             ->assertOk()
-            ->assertSee('name="message"', false);
+            ->assertDontSee('name="message"', false);
 
         $this->from($resultUrl)
             ->post(route('reservasi.testimoni.store'), [
@@ -82,13 +80,10 @@ class TestimonialTest extends TestCase
                 'rating' => 5,
                 'message' => 'Hasil foto sangat bagus dan pelayanannya ramah.',
             ])
-            ->assertRedirect($resultUrl)
-            ->assertSessionHas('testimonial_success');
+            ->assertRedirectBackWithErrors(['token']);
 
-        $this->assertDatabaseHas('testimonials', [
+        $this->assertDatabaseMissing('testimonials', [
             'reservation_id' => $payment->reservation_id,
-            'rating' => 5,
-            'message' => 'Hasil foto sangat bagus dan pelayanannya ramah.',
         ]);
     }
 
@@ -192,6 +187,7 @@ class TestimonialTest extends TestCase
             'session_completed_at' => '2026-10-30 12:00:00',
             'photo_status' => 'siap',
             'photo_delivery_url' => 'https://example.test/galeri',
+            'edited_photo_url' => 'https://example.test/galeri-edit',
         ]);
 
         return Payment::create([
