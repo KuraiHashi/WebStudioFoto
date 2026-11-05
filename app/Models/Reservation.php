@@ -29,6 +29,8 @@ class Reservation extends Model
         'session_completed_at',
         'photo_status',
         'photo_delivery_url',
+        'edit_request_message',
+        'edited_photo_url',
     ];
 
     protected $casts = [

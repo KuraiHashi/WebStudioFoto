@@ -221,6 +221,29 @@ class ReservasiController extends Controller
         return view('reservasi.cek', compact('payment', 'token'));
     }
 
+    public function requestPhotoEdit(Request $request)
+    {
+        $validated = $request->validate([
+            'token' => ['required', 'exists:payments,token'],
+            'edit_request_message' => ['required', 'string', 'max:500'],
+        ]);
+
+        $payment = Payment::with('reservation')->where('token', strtoupper(trim($validated['token'])))->firstOrFail();
+        $reservation = $payment->reservation;
+
+        if ($payment->status !== 'Selesai') {
+            throw ValidationException::withMessages([
+                'edit_request_message' => 'Permintaan edit hanya dapat dikirim setelah pembayaran lunas dan hasil foto sudah dibagikan.',
+            ]);
+        }
+
+        $reservation->edit_request_message = trim($validated['edit_request_message']);
+        $reservation->save();
+
+        return redirect()->route('reservasi.result', ['token' => $payment->token])
+            ->with('success', 'Permintaan edit foto berhasil dikirim ke admin.');
+    }
+
     /**
      * Menampilkan halaman upload pembayaran.
      */

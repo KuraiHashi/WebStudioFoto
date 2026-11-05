@@ -277,7 +277,40 @@ document.addEventListener('keydown', e => {
 
 // ---------- Inisialisasi per halaman ----------
 const nav = q('nav');
-if (nav) { const f = () => nav.classList.toggle('s', nav.classList.contains('solid') || scrollY > 40); f(); addEventListener('scroll', f); }
+if (nav) {
+  const f = () => nav.classList.toggle('s', nav.classList.contains('solid') || scrollY > 40);
+  f(); addEventListener('scroll', f);
+
+  const navLinks = [...document.querySelectorAll('nav .l[data-section]')];
+  const navSections = navLinks
+    .map(link => document.getElementById(link.dataset.section))
+    .filter(Boolean);
+
+  const updateActiveNav = () => {
+    const offset = window.innerHeight * 0.25;
+    let activeId = navLinks[0]?.dataset.section || '';
+
+    navSections.forEach(section => {
+      if (section.offsetTop - offset <= window.scrollY) {
+        activeId = section.id;
+      }
+    });
+
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.dataset.section === activeId);
+    });
+  };
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      navLinks.forEach(item => item.classList.remove('active'));
+      link.classList.add('active');
+    });
+  });
+
+  updateActiveNav();
+  addEventListener('scroll', updateActiveNav, { passive: true });
+}
 
 if (PG === 'paket') {
   let n = qs('p'); if (!pkOf(n)) n = (PK[0] || {}).n; const p = pkOf(n);

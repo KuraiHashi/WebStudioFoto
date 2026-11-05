@@ -33,7 +33,7 @@
 <footer id="kontak">
     <div class="wrap">
         <div class="fg">
-            <div><a class="logo" href="index.html" style="margin-bottom:18px"><i></i>liquif
+            <div><a class="logo" href="{{ url('/') }}" style="margin-bottom:18px"><i></i>liquif
                     <small>Picture</small></a>
                 <p>{{ $studio->description ?? '-'}}</p>
             </div>

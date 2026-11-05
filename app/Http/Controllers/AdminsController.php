@@ -277,6 +277,7 @@ class AdminsController extends Controller
     {
         $validated = $request->validate([
             'photo_delivery_url' => ['required', 'url', 'max:2048'],
+            'photo_kind' => ['nullable', Rule::in(['original', 'edited'])],
         ]);
 
         if ($reservation->payment?->status !== 'Selesai'
@@ -284,6 +285,16 @@ class AdminsController extends Controller
             throw ValidationException::withMessages([
                 'photo_delivery_url' => 'Hasil foto dapat dikirim setelah pembayaran lunas diverifikasi.',
             ]);
+        }
+
+        $kind = $validated['photo_kind'] ?? 'original';
+
+        if ($kind === 'edited') {
+            $reservation->edited_photo_url = $validated['photo_delivery_url'];
+            $reservation->photo_status = 'siap';
+            $reservation->save();
+
+            return redirect()->route('admin.dashboard')->with('success', 'Tautan hasil edit foto berhasil dikirim kepada pelanggan.');
         }
 
         if (! in_array($reservation->photo_status, ['belum_diproses', 'diproses'], true)) {

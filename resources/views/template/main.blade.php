@@ -18,12 +18,23 @@
 <body data-pg="index">
     <nav>
         <div class="wrap">
-            <a class="logo" href="index.html"><i></i>liquif <small>Picture</small></a>
-            <div class="menu"><a class="l" href="#profil">Profil</a><a class="l" href="#galeri">Galeri</a><a
-                    class="l" href="#paket">Paket</a><a class="l" href="#testimoni">Testimoni</a><a
-                    class="l" href="#kontak">Kontak</a>
-                <a class="btn sm" href="/reservasi/cek">Cek Reservasi</a><a class="btn sm gold"
-                    href="/reservasi">Reservasi</a>
+            <a class="logo" href="{{ url('/') }}" aria-label="Halaman utama Liquif Picture">
+                <span class="logo-brand" aria-hidden="true">
+                    <img src="{{ asset('Assets/images/logo.jpeg') }}" alt="" class="logo-icon">
+                </span>
+                <span class="logo-wordmark" aria-label="Liquif Picture">
+                    <span class="logo-script">liquif Picture</span>
+                    <span class="logo-subtitle">Photo &amp; Cinema</span>
+                </span>
+            </a>
+            <div class="menu">
+                <a class="l" data-section="profil" href="{{ url('/#profil') }}">Profil</a>
+                <a class="l" data-section="galeri" href="{{ url('/#galeri') }}">Galeri</a>
+                <a class="l" data-section="paket" href="{{ url('/#paket') }}">Paket</a>
+                <a class="l" data-section="testimoni" href="{{ url('/#testimoni') }}">Testimoni</a>
+                <a class="l" data-section="kontak" href="{{ url('/#kontak') }}">Kontak</a>
+                <a class="btn sm" href="{{ route('reservasi.cek') }}">Cek Reservasi</a>
+                <a class="btn sm gold" href="{{ route('reservasi.index') }}">Reservasi</a>
             </div>
             <button class="bg" aria-label="Menu"><i></i><i></i><i></i></button>
         </div>
@@ -36,15 +47,12 @@
 
 
     @php
-        $heroGalleryPhoto = $galeries->first();
-        $heroImage = $heroGalleryPhoto
-            ? asset('storage/' . $heroGalleryPhoto->filename)
-            : 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=85';
+        $heroImage = asset('Assets/images/hero-estetik.jpg');
     @endphp
 
     <header class="hero hero-editorial">
         <img class="hero-background" src="{{ $heroImage }}"
-            alt="{{ $heroGalleryPhoto ? 'Potret pilihan dari galeri studio Liquif Picture' : 'Pasangan pengantin di momen istimewa mereka' }}"
+            alt="Potret estetik untuk studio Liquif Picture"
             fetchpriority="high">
         <div class="hero-backdrop" aria-hidden="true"></div>
         <div class="wrap">
@@ -119,9 +127,6 @@
 
         {{-- PAKET FOTOGRAFI --}}
         @include('paketFotografi/paket_fotografi')
-
-        {{-- ALUR RESERVASI --}}
-        @include('template/layout/reservasi')
 
         {{-- TESTIMONI --}}
         @include('template/layout/testimoni')
