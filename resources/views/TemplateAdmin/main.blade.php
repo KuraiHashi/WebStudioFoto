@@ -84,23 +84,47 @@
                 </svg>
                 <span>Rekening</span>
             </a>
-            <a class="m @yield('account')" href="{{ route('admin.account.edit') }}">
-                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M5 21v-2a7 7 0 0 1 14 0v2M19 8h3m-1.5-1.5v3" />
-                </svg>
-                <span>Akun Admin</span>
-            </a>
-            <form method="POST" action="{{ route('logout') }}" class="logout-form">
-                @csrf
-                <button class="m out" type="submit">
-                    <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-                        <path d="M10 17l5-5-5-5m5 5H3" />
-                        <path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" />
+            @php($adminUser = auth()->user())
+            <div class="admin-profile-menu" data-admin-profile-menu>
+                <button
+                    class="admin-profile-toggle"
+                    type="button"
+                    data-admin-profile-toggle
+                    aria-expanded="false"
+                    aria-controls="admin-profile-actions"
+                >
+                    <span class="admin-profile-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($adminUser->name, 0, 1)) }}</span>
+                    <span class="admin-profile-identity">
+                        <strong>{{ $adminUser->name }}</strong>
+                        <small>{{ $adminUser->email }}</small>
+                    </span>
+                    <svg class="admin-profile-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m9 18 6-6-6-6" />
                     </svg>
-                    <span>Logout</span>
                 </button>
-            </form>
+                <div class="admin-profile-actions" id="admin-profile-actions">
+                    <a class="admin-profile-action" href="{{ route('admin.account.edit') }}">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="8" r="4" />
+                            <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+                        </svg>
+                        <span>
+                            <strong>Akun &amp; kata sandi</strong>
+                            <small>Ubah email atau password</small>
+                        </span>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" class="admin-profile-logout">
+                        @csrf
+                        <button class="admin-profile-action" type="submit">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M10 17l5-5-5-5m5 5H3" />
+                                <path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" />
+                            </svg>
+                            <span><strong>Keluar</strong></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </aside>
 
         {{-- KONTEN MAIN --}}

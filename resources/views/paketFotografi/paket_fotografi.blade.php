@@ -1,73 +1,3 @@
-@php
-    $packageCategoryDefinitions = [
-        'prewedding' => [
-            'label' => 'Prewedding',
-            'keywords' => ['prewedding', 'pre-wedding', 'pre wedding', 'engagement', 'tunangan'],
-        ],
-        'wedding' => [
-            'label' => 'Wedding',
-            'keywords' => ['wedding', 'pernikahan', 'nikah'],
-        ],
-        'wisuda' => [
-            'label' => 'Wisuda',
-            'keywords' => ['wisuda', 'graduation', 'kelulusan'],
-        ],
-        'keluarga' => [
-            'label' => 'Keluarga',
-            'keywords' => ['keluarga', 'family'],
-        ],
-        'pasangan' => [
-            'label' => 'Pasangan',
-            'keywords' => ['couple', 'pasangan'],
-        ],
-        'maternity' => [
-            'label' => 'Maternity',
-            'keywords' => ['maternity', 'pregnancy', 'bumil', 'kehamilan'],
-        ],
-        'newborn' => [
-            'label' => 'Newborn & Bayi',
-            'keywords' => ['newborn', 'bayi', 'baby'],
-        ],
-        'produk' => [
-            'label' => 'Produk & Komersial',
-            'keywords' => ['produk', 'product', 'katalog', 'komersial'],
-        ],
-        'portrait' => [
-            'label' => 'Potret Personal',
-            'keywords' => ['portrait', 'potret', 'personal', 'individu'],
-        ],
-    ];
-
-    $packageCategories = $packages->mapWithKeys(function ($package) use ($packageCategoryDefinitions) {
-        $categoryText = mb_strtolower(implode(' ', [
-            $package->name,
-            $package->facilities,
-            $package->description ?? '',
-            $package->bonus ?? '',
-        ]));
-        $hasPreweddingKeyword = str_contains($categoryText, 'prewedding')
-            || str_contains($categoryText, 'pre-wedding')
-            || str_contains($categoryText, 'pre wedding');
-        $categories = [];
-
-        foreach ($packageCategoryDefinitions as $slug => $definition) {
-            $matchesKeyword = collect($definition['keywords'])
-                ->contains(fn ($keyword) => str_contains($categoryText, $keyword));
-            if ($slug === 'wedding' && $hasPreweddingKeyword) {
-                $matchesKeyword = false;
-            }
-
-            if ($matchesKeyword || ($slug === 'wedding' && $package->is_wedding && ! $hasPreweddingKeyword)) {
-                $categories[] = $slug;
-            }
-        }
-
-        return [$package->id => $categories ?: ['lainnya']];
-    });
-
-    $availablePackageCategories = $packageCategories->flatten()->unique()->values();
-@endphp
-
 <section id="paket" style="background: var(--sand); padding: 80px 0;">
     <!-- CSS Internal untuk Carousel & Sembunyikan Scrollbar -->
     <style>
@@ -89,10 +19,10 @@
             <div class="package-category-filters" role="group" aria-label="Filter kategori paket">
                 <button class="package-category-button is-active" type="button" data-category-filter=""
                     aria-pressed="true">Semua</button>
-                @foreach ($availablePackageCategories as $category)
+                @foreach ($packageCategories as $category)
                     <button class="package-category-button" type="button" data-category-filter="{{ $category }}"
                         aria-pressed="false">
-                        {{ $packageCategoryDefinitions[$category]['label'] ?? 'Lainnya' }}
+                        {{ $category }}
                     </button>
                 @endforeach
             </div>
@@ -109,11 +39,10 @@
                     // Memecah fasilitas berdasarkan titik tengah (·) ATAU koma (,)
                     $facilities = preg_split('/[·,]/', $package->facilities);
                     
-                    $categorySlugs = $packageCategories[$package->id];
                 @endphp
 
                 <div class="pc {{ $isFeatured ? 'f' : '' }}" 
-                     data-category="{{ implode(' ', $categorySlugs) }}"
+                     data-category="{{ $package->category }}"
                      style="flex: 0 0 320px; scroll-snap-align: start;">
                     <div class="rn">{{ $rn }}</div>
                     <h3>{{ $package->name }}</h3>
@@ -163,8 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let visibleCount = 0;
 
         cards.forEach(card => {
-            const categories = card.dataset.category.split(' ');
-            if (!selectedCategory || categories.includes(selectedCategory)) {
+            if (!selectedCategory || card.dataset.category === selectedCategory) {
                 card.style.display = '';
                 visibleCount++;
             } else {

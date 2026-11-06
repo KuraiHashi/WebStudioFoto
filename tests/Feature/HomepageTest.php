@@ -66,6 +66,7 @@ class HomepageTest extends TestCase
     {
         PhotographyPackage::create([
             'name' => 'Paket Pre Wedding',
+            'category' => 'Prewedding',
             'price' => 2500000,
             'duration' => '4 jam',
             'facilities' => 'Sesi foto',
@@ -73,6 +74,7 @@ class HomepageTest extends TestCase
         ]);
         PhotographyPackage::create([
             'name' => 'Paket Wedding',
+            'category' => 'Wedding',
             'price' => 5000000,
             'duration' => 'Sehari',
             'facilities' => 'Dokumentasi acara',
@@ -80,12 +82,14 @@ class HomepageTest extends TestCase
         ]);
         PhotographyPackage::create([
             'name' => 'Paket Wisuda',
+            'category' => 'Wisuda',
             'price' => 1000000,
             'duration' => '2 jam',
             'facilities' => 'Sesi foto',
         ]);
         PhotographyPackage::create([
             'name' => 'Paket Foto Studio',
+            'category' => 'Lainnya',
             'price' => 750000,
             'duration' => '1 jam',
             'facilities' => 'Sesi foto',
@@ -94,15 +98,43 @@ class HomepageTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('data-category-filter=""', false)
-            ->assertSee('data-category-filter="prewedding"', false)
-            ->assertSee('data-category="prewedding"', false)
-            ->assertSee('data-category-filter="wedding"', false)
-            ->assertSee('data-category="wedding"', false)
-            ->assertSee('data-category-filter="wisuda"', false)
-            ->assertSee('data-category="wisuda"', false)
-            ->assertSee('data-category-filter="lainnya"', false)
+            ->assertSee('data-category-filter="Prewedding"', false)
+            ->assertSee('data-category="Prewedding"', false)
+            ->assertSee('data-category-filter="Wedding"', false)
+            ->assertSee('data-category="Wedding"', false)
+            ->assertDontSee('data-category="Prewedding Wedding"', false)
+            ->assertDontSee('data-category="Wedding Prewedding"', false)
+            ->assertSee('data-category-filter="Wisuda"', false)
+            ->assertSee('data-category="Wisuda"', false)
+            ->assertSee('data-category-filter="Lainnya"', false)
             ->assertDontSee('data-category-filter="maternity"', false)
             ->assertDontSee('packageSearch', false)
             ->assertDontSee('type="search"', false);
+    }
+
+    public function test_homepage_adds_custom_package_categories_as_exact_filters(): void
+    {
+        PhotographyPackage::create([
+            'name' => 'Paket Foto Dokumen',
+            'category' => 'Pas Foto',
+            'price' => 200000,
+            'duration' => '15 menit',
+            'facilities' => 'Foto dokumen',
+        ]);
+        PhotographyPackage::create([
+            'name' => 'Paket Prewedding Mini',
+            'category' => 'Prewedding',
+            'price' => 900000,
+            'duration' => '10 menit',
+            'facilities' => 'Sesi foto',
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-category-filter="Pas Foto"', false)
+            ->assertSee('data-category="Pas Foto"', false)
+            ->assertSee('data-category-filter="Prewedding"', false)
+            ->assertSee('data-category="Prewedding"', false)
+            ->assertSee('card.dataset.category === selectedCategory', false);
     }
 }

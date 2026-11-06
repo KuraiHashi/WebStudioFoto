@@ -15,11 +15,18 @@ class GaleriController extends Controller
 
         // Mengambil semua data paket fotografi
         $packages = PhotographyPackage::all();
+        $packageCategories = $packages
+            ->pluck('category')
+            ->filter()
+            ->map(fn (string $category): string => trim($category))
+            ->unique(fn (string $category): string => mb_strtolower($category))
+            ->sort()
+            ->values();
 
         $testimonials = Testimonial::latest()->limit(3)->get();
 
         // dd($packages->toArray());
 
-        return view('template.main', compact('galeries', 'selectedPhotos', 'packages', 'testimonials'));
+        return view('template.main', compact('galeries', 'selectedPhotos', 'packages', 'packageCategories', 'testimonials'));
     }
 }

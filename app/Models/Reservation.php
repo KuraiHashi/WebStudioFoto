@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SessionDuration;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -57,11 +58,15 @@ class Reservation extends Model
 
     public function canBeMarkedComplete(): bool
     {
-        preg_match('/\d+/', $this->duration, $durationMatches);
-        $durationHours = isset($durationMatches[0]) ? (int) $durationMatches[0] : 2;
-        $scheduledEnd = Carbon::parse($this->date.' '.$this->time)->addHours($durationHours);
+        $scheduledEnd = Carbon::parse($this->date.' '.$this->time)
+            ->addSeconds($this->sessionDurationInSeconds());
 
         return now()->greaterThanOrEqualTo($scheduledEnd);
+    }
+
+    public function sessionDurationInSeconds(): int
+    {
+        return SessionDuration::inSeconds($this->package?->duration ?? $this->duration);
     }
 
     public function canSubmitBalancePayment(): bool

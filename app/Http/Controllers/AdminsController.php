@@ -7,6 +7,8 @@ use App\Models\Payment;
 use App\Models\PhotographyPackage;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
+use App\Support\SessionDuration;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -582,16 +584,21 @@ class AdminsController extends Controller
     public function fotografy()
     {
         $pakets = PhotographyPackage::latest()->get();
+        $packageCategories = PhotographyPackage::query()
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
 
-        return view('TemplateAdmin.fotografy', compact('pakets'));
+        return view('TemplateAdmin.fotografy', compact('pakets', 'packageCategories'));
     }
 
     public function storeFotografy(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:80'],
             'price' => ['required', 'numeric'],
-            'duration' => ['required', 'string'],
+            'duration' => $this->durationRules(),
             'facilities' => ['required', 'string'],
             'description' => ['nullable', 'string'],
             'bonus' => ['nullable', 'string'],
@@ -602,6 +609,7 @@ class AdminsController extends Controller
 
         PhotographyPackage::create([
             'name' => $validated['name'],
+            'category' => trim($validated['category']),
             'is_wedding' => $request->boolean('is_wedding'),
             'price' => $validated['price'],
             'duration' => $validated['duration'],
@@ -618,8 +626,9 @@ class AdminsController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:80'],
             'price' => ['required', 'numeric'],
-            'duration' => ['required', 'string'],
+            'duration' => $this->durationRules(),
             'facilities' => ['required', 'string'],
             'description' => ['nullable', 'string'],
             'bonus' => ['nullable', 'string'],
@@ -633,6 +642,7 @@ class AdminsController extends Controller
 
         $paket->update([
             'name' => $validated['name'],
+            'category' => trim($validated['category']),
             'is_wedding' => $request->boolean('is_wedding'),
             'price' => $validated['price'],
             'duration' => $validated['duration'],
@@ -664,6 +674,20 @@ class AdminsController extends Controller
         }
 
         return $storedPhotos;
+    }
+
+    private function durationRules(): array
+    {
+        return [
+            'bail',
+            'required',
+            'string',
+            function (string $attribute, mixed $value, Closure $fail): void {
+                if (! is_string($value) || ! SessionDuration::isValid($value)) {
+                    $fail('Gunakan format durasi seperti 4 jam, 10 menit, 30 detik, atau 1 jam 30 menit.');
+                }
+            },
+        ];
     }
 
     /**

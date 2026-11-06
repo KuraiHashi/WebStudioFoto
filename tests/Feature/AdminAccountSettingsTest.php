@@ -117,4 +117,23 @@ class AdminAccountSettingsTest extends TestCase
             ->assertOk()
             ->assertDontSee('Kelola akun admin');
     }
+
+    public function test_admin_sidebar_shows_account_and_logout_in_the_profile_menu(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'name' => 'Studio Admin',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-admin-profile-toggle', false)
+            ->assertSee('Studio Admin')
+            ->assertSee('Akun & kata sandi')
+            ->assertSee(route('admin.account.edit'), false)
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertSee('Keluar')
+            ->assertDontSee('<span>Akun Admin</span>', false)
+            ->assertDontSee('<span>Logout</span>', false);
+    }
 }

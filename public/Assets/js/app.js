@@ -248,7 +248,21 @@ function submit(btn) {
   btn.dataset.confirm ? ask(btn.dataset.confirm, run) : run();
 }
 
+const adminProfileMenu = q('[data-admin-profile-menu]');
+const closeAdminProfileMenu = () => {
+  adminProfileMenu?.classList.remove('is-open');
+  adminProfileMenu?.querySelector('[data-admin-profile-toggle]')?.setAttribute('aria-expanded', 'false');
+};
+
 document.addEventListener('click', e => {
+  const profileToggle = e.target.closest('[data-admin-profile-toggle]');
+  if (profileToggle) {
+    const isOpen = adminProfileMenu.classList.toggle('is-open');
+    profileToggle.setAttribute('aria-expanded', String(isOpen));
+    return;
+  }
+  if (adminProfileMenu && !adminProfileMenu.contains(e.target)) closeAdminProfileMenu();
+
   const bg = e.target.closest('.bg');
   if (bg) {
     const n = bg.closest('nav');
@@ -271,7 +285,7 @@ document.addEventListener('change', e => {
   if (e.target.type === 'file') { const d = e.target.closest('label').querySelector('.dn'), f = e.target.files; if (!d.dataset.o) d.dataset.o = d.textContent; d.textContent = f.length ? (f.length > 1 ? f.length + ' file dipilih' : f[0].name) : d.dataset.o; }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { const cf = q('#cf.on'); cf ? cf.classList.remove('on') : closeM(); }
+  if (e.key === 'Escape') { closeAdminProfileMenu(); const cf = q('#cf.on'); cf ? cf.classList.remove('on') : closeM(); }
   if (e.key === 'Enter') { if (e.target.id === 'kc') lookup(); if (e.target.id === 'qc') H.quick(); }
 });
 

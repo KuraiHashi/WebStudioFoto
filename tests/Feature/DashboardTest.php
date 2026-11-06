@@ -39,6 +39,11 @@ class DashboardTest extends TestCase
             ->assertSee('Lunas / selesai')
             ->assertDontSee('Dari booking sampai hasil foto');
 
+        $response
+            ->assertSee('btn-workflow', false)
+            ->assertDontSee('class="btn sm btn-tagihan"', false)
+            ->assertDontSee('class="btn sm btn-reservasi"', false);
+
         $this->assertSame(3, substr_count($response->getContent(), 'class="kp-card'));
     }
 
@@ -523,6 +528,105 @@ class DashboardTest extends TestCase
             'payment_id' => $reservation->payment->id,
             'status' => 'menunggu_verifikasi',
             'amount' => 500000,
+        ]);
+    }
+
+    public function test_admin_and_customer_workflows_recognize_a_custom_minute_duration(): void
+    {
+        $sessionStart = now()->startOfDay()->setTime(10, 0);
+        $this->travelTo($sessionStart->copy()->addMinutes(8));
+
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'MINUTE-SESSION-001',
+            'Pelanggan',
+            $sessionStart->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $package->update(['duration' => '7 menit']);
+        $reservation->payment->update(['total_paid' => 500000]);
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-session-ended="1"', false);
+
+        $this->get(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Bayar pelunasan')
+            ->assertSee('Jadwal sesi pemotretan telah berakhir.');
+
+        $this->put(route('admin.reservasi.session-complete', $reservation))
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'session_completed_at' => now()->toDateTimeString(),
+        ]);
+    }
+
+    public function test_admin_can_complete_a_session_after_a_custom_seconds_duration(): void
+    {
+        $sessionStart = now()->startOfDay()->setTime(10, 0);
+        $this->travelTo($sessionStart->copy()->addSeconds(31));
+
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'SECONDS-SESSION-001',
+            'Pelanggan',
+            $sessionStart->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $package->update(['duration' => '30 detik']);
+
+        $this->put(route('admin.reservasi.session-complete', $reservation))
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'session_completed_at' => now()->toDateTimeString(),
+        ]);
+    }
+
+    public function test_current_package_duration_and_studio_timezone_enable_balance_workflow_for_existing_reservation(): void
+    {
+        $sessionStart = now()->startOfDay()->setTime(18, 0);
+        $this->travelTo($sessionStart->copy()->addSeconds(15));
+
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'LOCAL-TIME-SESSION-001',
+            'Pelanggan',
+            $sessionStart->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $reservation->update([
+            'time' => '18:00:00',
+            'duration' => '4 jam',
+        ]);
+        $package->update(['duration' => '10 detik']);
+        $reservation->payment->update(['total_paid' => 500000]);
+
+        $this->assertSame('Asia/Jakarta', config('app.timezone'));
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-session-ended="1"', false)
+            ->assertSee('Tandai sesi selesai')
+            ->assertSee('buka pelunasan');
+
+        $this->get(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Bayar pelunasan');
+
+        $this->put(route('admin.reservasi.session-complete', $reservation))
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'session_completed_at' => now()->toDateTimeString(),
         ]);
     }
 

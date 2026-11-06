@@ -8,6 +8,7 @@ use App\Models\PhotographyPackage;
 use App\Models\Rekening;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
+use App\Support\SessionDuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -47,6 +48,7 @@ class ReservasiController extends Controller
                     'date' => $res->date,
                     'time' => $res->time,
                     'duration' => $res->package?->duration ?? $res->duration,
+                    'duration_seconds' => $res->sessionDurationInSeconds(),
                     'is_wedding' => $this->isWeddingPackage($res->package),
                 ];
             });
@@ -87,10 +89,8 @@ class ReservasiController extends Controller
         $validated['token'] = 'RSV-'.strtoupper(Str::random(6));
         $isWeddingPackage = $this->isWeddingPackage($package);
 
-        preg_match('/\d+/', $package->duration, $matches);
-        $durationHours = isset($matches[0]) ? (int) $matches[0] : 2;
         $newStart = strtotime($validated['date'].' '.$validated['time']);
-        $newEnd = $newStart + ($durationHours * 3600);
+        $newEnd = $newStart + SessionDuration::inSeconds($package->duration);
         $startMinute = ((int) date('G', $newStart) * 60) + (int) date('i', $newStart);
         $now = now();
         $isPastTimeToday = $validated['date'] === $now->toDateString() && $newStart <= $now->timestamp;
@@ -116,10 +116,8 @@ class ReservasiController extends Controller
                     ->withErrors(['date' => 'Maaf, tanggal tersebut sudah memiliki jadwal pemotretan lain. Paket Wedding memerlukan tanggal yang sepenuhnya kosong.']);
             }
 
-            preg_match('/\d+/', $existing->package?->duration ?? '2', $existingMatches);
-            $existingDurationHours = isset($existingMatches[0]) ? (int) $existingMatches[0] : 2;
             $existStart = strtotime($existing->date.' '.$existing->time);
-            $existEnd = $existStart + ($existingDurationHours * 3600);
+            $existEnd = $existStart + $existing->sessionDurationInSeconds();
 
             if ($newStart <= $existEnd && $newEnd > $existStart) {
                 return redirect()->back()

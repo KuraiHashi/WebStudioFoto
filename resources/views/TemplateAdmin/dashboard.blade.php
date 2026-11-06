@@ -158,25 +158,6 @@
                                                 data-photo-action="{{ route('admin.reservasi.photos', $item->id) }}">
                                                 Proses
                                             </button>
-
-                                            <button type="button" class="btn sm btn-tagihan" 
-                                                data-token="{{ $item->token }}"
-                                                data-tagihan="{{ optional($item->payment)->tagihan ?? 0 }}"
-                                                data-paid="{{ optional($item->payment)->total_paid ?? 0 }}"
-                                                data-pending-proof="{{ $item->payment?->histories->where('status', 'menunggu_verifikasi')->sum('amount') ?? 0 }}"
-                                                data-action="{{ route('admin.reservasi.tagihan', $item->id) }}">
-                                                Tagihan
-                                            </button>
-
-                                            <button type="button" class="btn sm btn-reservasi" 
-                                                data-token="{{ $item->token }}"
-                                                data-name="{{ $item->name }}"
-                                                data-whatsapp="{{ $item->whatsapp }}"
-                                                data-date="{{ $item->date }}"
-                                                data-time="{{ $item->time }}"
-                                                data-action="{{ route('admin.reservasi.detail', $item->id) }}">
-                                                Jadwal
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -254,7 +235,7 @@
                 @method('PUT')
                 <div class="acts modal-action-group">
                     <button type="button" class="btn sm" onclick="closeModal('modalVerify')">Nanti</button>
-                    <button type="submit" class="btn sm ink">Tandai sesi selesai</button>
+                    <button type="submit" class="btn sm ink">Tandai sesi selesai &amp; buka pelunasan</button>
                 </div>
             </form>
 
@@ -471,7 +452,7 @@
                     message = 'Periksa bukti DP. Jika sesuai, setujui agar jadwal terkunci; jika tidak, tolak dan jelaskan alasannya.';
                 } else if (btn.dataset.status === 'Menunggu pelunasan' && !sessionComplete) {
                     message = sessionCanEnd
-                        ? 'Waktu sesi sudah berakhir. Pelanggan dapat mengirim pelunasan; tandai sesi selesai sebelum memverifikasi bukti.'
+                        ? 'Waktu sesi sudah berakhir. Tandai sesi selesai untuk membuka pelunasan pelanggan.'
                         : 'DP sudah disetujui. Form pelunasan pelanggan tersedia setelah waktu sesi pemotretan berakhir.';
                 } else if (btn.dataset.status === 'Menunggu pelunasan' && sessionComplete) {
                     message = 'Sesi selesai. Tunggu pelanggan membayar sisa tagihan dan mengirim bukti pelunasan.';

@@ -51,6 +51,46 @@ class PhotographyPackagePhotoTest extends TestCase
             ->assertSee('data-image="'.asset('storage/'.$package->photos[1]).'"', false);
     }
 
+    public function test_admin_can_create_a_package_with_a_new_filter_category(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+
+        $this->from(route('admin.fotografi'))
+            ->post(route('admin.fotografi.store'), $this->packagePayload([
+                'category' => 'Pas Foto',
+            ]))
+            ->assertRedirect(route('admin.fotografi'));
+
+        $this->assertDatabaseHas('photography_packages', [
+            'name' => 'Paket Tes Foto',
+            'category' => 'Pas Foto',
+        ]);
+
+        $this->get(route('admin.fotografi'))
+            ->assertOk()
+            ->assertSee('Pas Foto')
+            ->assertSee('list="package-category-options"', false);
+    }
+
+    public function test_admin_can_change_a_package_filter_category(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        $package = PhotographyPackage::create($this->packagePayload([
+            'category' => 'Prewedding',
+        ]));
+
+        $this->from(route('admin.fotografi'))
+            ->put(route('admin.fotografi.update', $package), $this->packagePayload([
+                'category' => 'Wedding',
+            ]))
+            ->assertRedirect(route('admin.fotografi'));
+
+        $this->assertDatabaseHas('photography_packages', [
+            'id' => $package->id,
+            'category' => 'Wedding',
+        ]);
+    }
+
     public function test_admin_can_append_photos_to_a_package_without_removing_existing_photos(): void
     {
         Storage::fake('public');
@@ -73,6 +113,58 @@ class PhotographyPackagePhotoTest extends TestCase
         Storage::disk('public')->assertExists($package->photos[1]);
     }
 
+    public function test_admin_can_update_a_package_duration_in_seconds(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        $package = PhotographyPackage::create($this->packagePayload());
+
+        $this->from(route('admin.fotografi'))
+            ->put(route('admin.fotografi.update', $package), $this->packagePayload([
+                'duration' => '30 detik',
+            ]))
+            ->assertRedirect(route('admin.fotografi'));
+
+        $this->assertDatabaseHas('photography_packages', [
+            'id' => $package->id,
+            'duration' => '30 detik',
+        ]);
+    }
+
+    public function test_admin_can_update_a_package_duration_in_minutes(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        $package = PhotographyPackage::create($this->packagePayload());
+
+        $this->from(route('admin.fotografi'))
+            ->put(route('admin.fotografi.update', $package), $this->packagePayload([
+                'duration' => '10 menit',
+            ]))
+            ->assertRedirect(route('admin.fotografi'));
+
+        $this->assertDatabaseHas('photography_packages', [
+            'id' => $package->id,
+            'duration' => '10 menit',
+        ]);
+    }
+
+    public function test_admin_cannot_save_a_package_with_an_unrecognized_duration(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        $package = PhotographyPackage::create($this->packagePayload());
+
+        $this->from(route('admin.fotografi'))
+            ->put(route('admin.fotografi.update', $package), $this->packagePayload([
+                'duration' => 'seven minutes',
+            ]))
+            ->assertRedirect(route('admin.fotografi'))
+            ->assertSessionHasErrors('duration');
+
+        $this->assertDatabaseHas('photography_packages', [
+            'id' => $package->id,
+            'duration' => '2 jam',
+        ]);
+    }
+
     public function test_admin_cannot_upload_a_non_image_as_a_package_photo(): void
     {
         Storage::fake('public');
@@ -92,6 +184,7 @@ class PhotographyPackagePhotoTest extends TestCase
     {
         return array_merge([
             'name' => 'Paket Tes Foto',
+            'category' => 'Lainnya',
             'price' => 1000000,
             'duration' => '2 jam',
             'facilities' => 'Studio',

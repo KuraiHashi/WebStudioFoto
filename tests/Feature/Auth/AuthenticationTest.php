@@ -83,6 +83,40 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('admin.account.edit'));
     }
 
+    public function test_admin_is_not_asked_to_change_password_again_after_changing_it_and_logging_in_again(): void
+    {
+        $user = User::factory()->admin()->create([
+            'password' => 'InitialAdminPassword!',
+            'must_change_password' => true,
+        ]);
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'InitialAdminPassword!',
+        ])->assertRedirect(route('admin.account.edit'));
+
+        $this->put(route('admin.account.update'), [
+            'email' => $user->email,
+            'current_password' => 'InitialAdminPassword!',
+            'password' => 'UpdatedAdminPassword123!',
+            'password_confirmation' => 'UpdatedAdminPassword123!',
+        ])->assertRedirect(route('admin.account.edit'));
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'must_change_password' => false,
+        ]);
+
+        $this->post('/logout')->assertRedirect('/');
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'UpdatedAdminPassword123!',
+        ])->assertRedirect(route('admin.dashboard'));
+
+        $this->get(route('admin.dashboard'))->assertOk();
+    }
+
     public function test_admins_can_logout(): void
     {
         $user = User::factory()->admin()->create();

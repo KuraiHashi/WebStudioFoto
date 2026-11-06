@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SessionDuration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,6 +16,7 @@ class PhotographyPackage extends Model
 
     protected $fillable = [
         'name',
+        'category',
         'price',
         'duration',
         'bonus',
@@ -23,8 +25,14 @@ class PhotographyPackage extends Model
         'photos',
         'is_wedding',
     ];
+
     // Otomatis convert JSON dari database ke array PHP
     protected $casts = [
         'photos' => 'array',
     ];
+
+    public function durationInSeconds(): int
+    {
+        return SessionDuration::inSeconds($this->duration);
+    }
 }
