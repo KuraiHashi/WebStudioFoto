@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Galery;
+use App\Models\PhotographyPackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,5 +60,49 @@ class HomepageTest extends TestCase
             ->assertSee('Galeri sedang menyiapkan cerita pertamanya.')
             ->assertSee('Karya pilihan sedang disiapkan.')
             ->assertDontSee('gallery-play-control', false);
+    }
+
+    public function test_homepage_offers_only_available_package_categories_and_assigns_pre_wedding_correctly(): void
+    {
+        PhotographyPackage::create([
+            'name' => 'Paket Pre Wedding',
+            'price' => 2500000,
+            'duration' => '4 jam',
+            'facilities' => 'Sesi foto',
+            'is_wedding' => true,
+        ]);
+        PhotographyPackage::create([
+            'name' => 'Paket Wedding',
+            'price' => 5000000,
+            'duration' => 'Sehari',
+            'facilities' => 'Dokumentasi acara',
+            'is_wedding' => true,
+        ]);
+        PhotographyPackage::create([
+            'name' => 'Paket Wisuda',
+            'price' => 1000000,
+            'duration' => '2 jam',
+            'facilities' => 'Sesi foto',
+        ]);
+        PhotographyPackage::create([
+            'name' => 'Paket Foto Studio',
+            'price' => 750000,
+            'duration' => '1 jam',
+            'facilities' => 'Sesi foto',
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-category-filter=""', false)
+            ->assertSee('data-category-filter="prewedding"', false)
+            ->assertSee('data-category="prewedding"', false)
+            ->assertSee('data-category-filter="wedding"', false)
+            ->assertSee('data-category="wedding"', false)
+            ->assertSee('data-category-filter="wisuda"', false)
+            ->assertSee('data-category="wisuda"', false)
+            ->assertSee('data-category-filter="lainnya"', false)
+            ->assertDontSee('data-category-filter="maternity"', false)
+            ->assertDontSee('packageSearch', false)
+            ->assertDontSee('type="search"', false);
     }
 }

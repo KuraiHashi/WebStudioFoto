@@ -56,6 +56,21 @@
                     </div>
 
                     <div class="fld profile-field-wide">
+                        <label for="profile-photo">Foto studio <span>(opsional)</span></label>
+                        <input id="profile-photo" type="file" name="foto_studio"
+                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                            aria-describedby="profile-photo-help @error('foto_studio') profile-photo-error @enderror" />
+                        <small class="profile-field-hint" id="profile-photo-help">JPG, PNG, atau WEBP · maks. 2 MB. Foto ini akan tampil di navbar dan footer.</small>
+                        @if ($profile?->foto_studio)
+                            <img class="profile-photo-preview" src="{{ asset('storage/' . $profile->foto_studio) }}"
+                                alt="Foto studio saat ini" loading="lazy">
+                        @endif
+                        @error('foto_studio')
+                            <span class="er" id="profile-photo-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="fld profile-field-wide">
                         <label for="profile-address">Alamat studio</label>
                         <input id="profile-address" type="text" name="address"
                             value="{{ old('address', $profile->address ?? '') }}" autocomplete="street-address"

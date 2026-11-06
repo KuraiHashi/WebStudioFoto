@@ -20,7 +20,11 @@
         <div class="wrap">
             <a class="logo" href="{{ url('/') }}" aria-label="Halaman utama Liquif Picture">
                 <span class="logo-brand" aria-hidden="true">
-                    <img src="{{ asset('Assets/images/logo.jpeg') }}" alt="" class="logo-icon">
+                    @if ($studio?->foto_studio)
+                        <img src="{{ asset('storage/' . $studio->foto_studio) }}" alt="" class="studio-photo-icon">
+                    @else
+                        <img src="{{ asset('Assets/images/logo.jpeg') }}" alt="" class="logo-icon">
+                    @endif
                 </span>
                 <span class="logo-wordmark" aria-label="Liquif Picture">
                     <span class="logo-script">liquif Picture</span>

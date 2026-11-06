@@ -544,7 +544,7 @@ class AdminsController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
             'phone' => 'required|string|max:20',
@@ -552,43 +552,25 @@ class AdminsController extends Controller
             'social_media' => 'nullable|string|max:100',
             'maps_link' => 'nullable|string', // Diubah dari 'url' menjadi 'string' agar bisa menerima tag iframe
             'description' => 'required|string',
+            'foto_studio' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        StudioProfile::updateOrCreate(
-            ['id' => 1],
-            [
-                'name' => $request->name,
-                'address' => $request->address,
-                'phone' => $request->phone,
-                'operational_hours' => $request->operational_hours,
-                'social_media' => $request->social_media,
-                'maps_link' => $request->maps_link, // Menyimpan string iframe secara langsung
-                'description' => $request->description,
-            ]
-        );
+        $studio = StudioProfile::firstOrNew(['id' => 1]);
+        $previousPhoto = $studio->foto_studio;
+        if ($request->hasFile('foto_studio')) {
+            $photoPath = $request->file('foto_studio')->store('studio', 'public');
+            if ($photoPath === false) {
+                throw new \RuntimeException('The studio photo could not be stored.');
+            }
 
-        $studio = StudioProfile::first() ?? new StudioProfile;
-
-        $data = $request->only([
-            'nama_studio' => $request->input('name'),
-            'alamat' => $request->input('address'),
-            'kontak' => $request->input('phone'),
-            'jam_operasional' => $request->input('operational_hours'),
-            'media_sosial' => $request->input('social_media'),
-            'google_maps' => $request->input('maps_link'),
-            'deskripsi' => $request->input('description'),
-            'nama_bank' => $request->input('nama_bank'),
-            'no_rekening' => $request->input('no_rekening'),
-            'nama_pemilik' => $request->input('nama_pemilik'),
-        ]);
-
-        // Handle Upload Gambar QRIS
-        if ($request->hasFile('foto_qris')) {
-            $path = $request->file('foto_qris')->store('qris', 'public');
-            $data['foto_qris'] = $path;
+            $validated['foto_studio'] = $photoPath;
         }
 
-        $studio->fill($data)->save();
+        $studio->fill($validated)->save();
+
+        if ($previousPhoto && isset($validated['foto_studio']) && $previousPhoto !== $validated['foto_studio']) {
+            Storage::disk('public')->delete($previousPhoto);
+        }
 
         return redirect()->back()->with('success', 'Profil studio berhasil diperbarui!');
     }
