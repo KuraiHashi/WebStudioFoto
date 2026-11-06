@@ -9,10 +9,12 @@ use App\Models\Reservation;
 use App\Models\StudioProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class AdminsController extends Controller
 {
@@ -560,7 +562,7 @@ class AdminsController extends Controller
         if ($request->hasFile('foto_studio')) {
             $photoPath = $request->file('foto_studio')->store('studio', 'public');
             if ($photoPath === false) {
-                throw new \RuntimeException('The studio photo could not be stored.');
+                throw new RuntimeException('The studio photo could not be stored.');
             }
 
             $validated['foto_studio'] = $photoPath;
@@ -586,24 +588,27 @@ class AdminsController extends Controller
 
     public function storeFotografy(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'duration' => 'required|string',
-            'facilities' => 'required|string',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric'],
+            'duration' => ['required', 'string'],
+            'facilities' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'bonus' => ['nullable', 'string'],
+            'is_wedding' => ['nullable', 'boolean'],
+            'photos' => ['sometimes', 'array', 'max:10'],
+            'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
-        // Mengambil nilai is_wedding (jika dicentang bernilai 1, jika tidak bernilai 0)
-        $isWedding = $request->has('is_wedding') ? 1 : 0;
-
         PhotographyPackage::create([
-            'name' => $request->name,
-            'is_wedding' => $isWedding, // <-- Simpan ke database
-            'price' => $request->price,
-            'duration' => $request->duration,
-            'facilities' => $request->facilities,
-            'description' => $request->description,
-            'bonus' => $request->bonus,
+            'name' => $validated['name'],
+            'is_wedding' => $request->boolean('is_wedding'),
+            'price' => $validated['price'],
+            'duration' => $validated['duration'],
+            'facilities' => $validated['facilities'],
+            'description' => $validated['description'] ?? null,
+            'bonus' => $validated['bonus'] ?? null,
+            'photos' => $this->storePackagePhotos($request->file('photos', [])),
         ]);
 
         return redirect()->back()->with('success', 'Paket fotografi berhasil ditambahkan.');
@@ -611,29 +616,54 @@ class AdminsController extends Controller
 
     public function updateFotografy(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'duration' => 'required|string',
-            'facilities' => 'required|string',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric'],
+            'duration' => ['required', 'string'],
+            'facilities' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'bonus' => ['nullable', 'string'],
+            'is_wedding' => ['nullable', 'boolean'],
+            'photos' => ['sometimes', 'array', 'max:10'],
+            'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $paket = PhotographyPackage::findOrFail($id);
-
-        // Cek apakah checkbox di-centang saat update
-        $isWedding = $request->has('is_wedding') ? 1 : 0;
+        $newPhotos = $this->storePackagePhotos($request->file('photos', []));
 
         $paket->update([
-            'name' => $request->name,
-            'is_wedding' => $isWedding, // <-- Perbarui data di database
-            'price' => $request->price,
-            'duration' => $request->duration,
-            'facilities' => $request->facilities,
-            'description' => $request->description,
-            'bonus' => $request->bonus,
+            'name' => $validated['name'],
+            'is_wedding' => $request->boolean('is_wedding'),
+            'price' => $validated['price'],
+            'duration' => $validated['duration'],
+            'facilities' => $validated['facilities'],
+            'description' => $validated['description'] ?? null,
+            'bonus' => $validated['bonus'] ?? null,
+            'photos' => [...($paket->photos ?? []), ...$newPhotos],
         ]);
 
         return redirect()->back()->with('success', 'Paket fotografi berhasil diperbarui.');
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $photos
+     * @return array<int, string>
+     */
+    private function storePackagePhotos(array $photos): array
+    {
+        $storedPhotos = [];
+
+        foreach ($photos as $photo) {
+            $path = $photo->storePublicly('packages', 'public');
+
+            if ($path === false) {
+                throw new RuntimeException('Foto paket gagal disimpan.');
+            }
+
+            $storedPhotos[] = $path;
+        }
+
+        return $storedPhotos;
     }
 
     /**

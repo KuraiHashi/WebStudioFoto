@@ -81,6 +81,6 @@
                 </div>
             </div>
         </div>
-        <div class="copy"><span>© Liquif Picture</span><a href="login.html">Login Admin</a></div>
+        <div class="copy"><span>© Liquif Picture</span><a href="{{ route('login') }}">Login Admin</a></div>
     </div>
 </footer>

@@ -296,7 +296,7 @@ class ReservasiController extends Controller
 
             $isDeposit = $payment->status === 'Menunggu pembayaran DP';
             $isBalancePayment = $payment->status === 'Menunggu pelunasan'
-                && $reservation->session_completed_at !== null;
+                && $reservation->canSubmitBalancePayment();
 
             if (! $isDeposit && ! $isBalancePayment) {
                 throw ValidationException::withMessages([

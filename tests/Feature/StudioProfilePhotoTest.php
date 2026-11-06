@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\StudioProfile;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -11,6 +12,13 @@ use Tests\TestCase;
 class StudioProfilePhotoTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAs(User::factory()->admin()->create());
+    }
 
     public function test_admin_can_upload_a_studio_photo_that_appears_in_the_navbar_and_footer(): void
     {

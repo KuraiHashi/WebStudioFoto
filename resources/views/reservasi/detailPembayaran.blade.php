@@ -57,9 +57,9 @@
                                 ← Kembali ke Cek Status
                             </a>
                         </div>
-                    @elseif ($payment->status === 'Menunggu pelunasan' && !$payment->reservation->session_completed_at)
+                    @elseif ($payment->status === 'Menunggu pelunasan' && !$payment->reservation->canSubmitBalancePayment())
                         <div class="note" style="padding: 18px; background: #f3ede3; border-radius: 8px;">
-                            DP sudah diverifikasi. Form pelunasan akan tersedia setelah sesi pemotretan selesai dan ditandai admin.
+                            DP sudah diverifikasi. Form pelunasan tersedia setelah waktu sesi pemotretan berakhir.
                         </div>
                     @elseif (in_array($payment->status, ['Konfirmasi pembayaran', 'Verifikasi pelunasan'], true))
                         <div class="note" style="padding: 18px; background: #f3ede3; border-radius: 8px;">

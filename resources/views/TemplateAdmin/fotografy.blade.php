@@ -145,7 +145,7 @@
                     <label>Tambah Foto Paket (Opsional)</label>
                     <label class="drop">
                         <span class="dn">Pilih atau seret foto tambahan paket</span><br />
-                        <span class="note">JPG / PNG / WEBP · maks. 2 MB per file</span>
+                        <span class="note">JPG / PNG / WEBP · maks. 4 MB per file</span>
                         <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*" multiple />
                     </label>
                 </div>

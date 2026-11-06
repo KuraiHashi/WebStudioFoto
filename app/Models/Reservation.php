@@ -63,4 +63,9 @@ class Reservation extends Model
 
         return now()->greaterThanOrEqualTo($scheduledEnd);
     }
+
+    public function canSubmitBalancePayment(): bool
+    {
+        return $this->session_completed_at !== null || $this->canBeMarkedComplete();
+    }
 }

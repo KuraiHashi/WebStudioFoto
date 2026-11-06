@@ -71,14 +71,14 @@
                 @php
                     $reservation = $payment->reservation;
                     $canPay = $payment->status === 'Menunggu pembayaran DP'
-                        || $payment->status === 'Menunggu pelunasan' && $reservation->session_completed_at !== null;
+                        || $payment->status === 'Menunggu pelunasan' && $reservation->canSubmitBalancePayment();
                     $statusMessage = match ($payment->status) {
                         'Masa konsultasi' => 'Reservasi menunggu konsultasi selesai. Admin akan mengaktifkan pembayaran DP setelah kesepakatan.',
                         'Menunggu pembayaran DP' => 'Silakan bayar DP minimal 50% dan kirim bukti. Jadwal dikunci setelah DP diverifikasi admin.',
                         'Konfirmasi pembayaran' => 'Bukti DP sudah diterima dan sedang diperiksa admin. Anda belum perlu mengirim bukti lagi.',
-                        'Menunggu pelunasan' => $reservation->session_completed_at
-                            ? 'Sesi pemotretan selesai. Silakan lunasi sisa tagihan dan kirim bukti pelunasan.'
-                            : 'DP sudah disetujui dan jadwal Anda tercatat. Setelah pemotretan selesai, admin akan membuka pelunasan.',
+                        'Menunggu pelunasan' => $reservation->canSubmitBalancePayment()
+                            ? 'Jadwal sesi pemotretan telah berakhir. Silakan lunasi sisa tagihan dan kirim bukti pelunasan.'
+                            : 'DP sudah disetujui dan jadwal Anda tercatat. Form pelunasan tersedia setelah waktu sesi pemotretan berakhir.',
                         'Verifikasi pelunasan' => 'Bukti pelunasan sudah diterima dan sedang diperiksa admin.',
                         'Selesai' => match ($reservation->photo_status) {
                             'diproses' => 'Pembayaran lunas. Hasil foto sedang diproses oleh studio.',

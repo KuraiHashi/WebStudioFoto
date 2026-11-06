@@ -471,8 +471,8 @@
                     message = 'Periksa bukti DP. Jika sesuai, setujui agar jadwal terkunci; jika tidak, tolak dan jelaskan alasannya.';
                 } else if (btn.dataset.status === 'Menunggu pelunasan' && !sessionComplete) {
                     message = sessionCanEnd
-                        ? 'Sesi sudah melewati jadwal. Tandai selesai setelah pemotretan benar-benar dilakukan; pelanggan kemudian dapat melunasi.'
-                        : 'DP sudah disetujui. Jadwal pemotretan masih akan datang; setelah sesi berakhir, tandai sesi selesai.';
+                        ? 'Waktu sesi sudah berakhir. Pelanggan dapat mengirim pelunasan; tandai sesi selesai sebelum memverifikasi bukti.'
+                        : 'DP sudah disetujui. Form pelunasan pelanggan tersedia setelah waktu sesi pemotretan berakhir.';
                 } else if (btn.dataset.status === 'Menunggu pelunasan' && sessionComplete) {
                     message = 'Sesi selesai. Tunggu pelanggan membayar sisa tagihan dan mengirim bukti pelunasan.';
                 } else if (btn.dataset.status === 'Verifikasi pelunasan' && !sessionComplete) {
