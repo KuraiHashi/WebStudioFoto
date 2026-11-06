@@ -33,8 +33,16 @@
 <footer id="kontak">
     <div class="wrap">
         <div class="fg">
-            <div><a class="logo" href="{{ url('/') }}" style="margin-bottom:18px"><i></i>liquif
-                    <small>Picture</small></a>
+            <div><a class="logo" href="{{ url('/') }}" style="margin-bottom:18px"
+                    aria-label="Halaman utama Liquif Picture">
+                    @if ($studio?->foto_studio)
+                        <img src="{{ asset('storage/' . $studio->foto_studio) }}" alt=""
+                            class="studio-photo-icon">
+                    @else
+                        <i></i>
+                    @endif
+                    liquif <small>Picture</small>
+                </a>
                 <p>{{ $studio->description ?? '-'}}</p>
             </div>
             <div>
@@ -73,6 +81,6 @@
                 </div>
             </div>
         </div>
-        <div class="copy"><span>© Liquif Picture</span><a href="login.html">Login Admin</a></div>
+        <div class="copy"><span>© Liquif Picture</span><a href="{{ route('login') }}">Login Admin</a></div>
     </div>
 </footer>

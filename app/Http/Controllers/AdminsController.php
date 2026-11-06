@@ -7,12 +7,16 @@ use App\Models\Payment;
 use App\Models\PhotographyPackage;
 use App\Models\Reservation;
 use App\Models\StudioProfile;
+use App\Support\SessionDuration;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class AdminsController extends Controller
 {
@@ -544,7 +548,7 @@ class AdminsController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string',
             'phone' => 'required|string|max:20',
@@ -552,43 +556,25 @@ class AdminsController extends Controller
             'social_media' => 'nullable|string|max:100',
             'maps_link' => 'nullable|string', // Diubah dari 'url' menjadi 'string' agar bisa menerima tag iframe
             'description' => 'required|string',
+            'foto_studio' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        StudioProfile::updateOrCreate(
-            ['id' => 1],
-            [
-                'name' => $request->name,
-                'address' => $request->address,
-                'phone' => $request->phone,
-                'operational_hours' => $request->operational_hours,
-                'social_media' => $request->social_media,
-                'maps_link' => $request->maps_link, // Menyimpan string iframe secara langsung
-                'description' => $request->description,
-            ]
-        );
+        $studio = StudioProfile::firstOrNew(['id' => 1]);
+        $previousPhoto = $studio->foto_studio;
+        if ($request->hasFile('foto_studio')) {
+            $photoPath = $request->file('foto_studio')->store('studio', 'public');
+            if ($photoPath === false) {
+                throw new RuntimeException('The studio photo could not be stored.');
+            }
 
-        $studio = StudioProfile::first() ?? new StudioProfile;
-
-        $data = $request->only([
-            'nama_studio' => $request->input('name'),
-            'alamat' => $request->input('address'),
-            'kontak' => $request->input('phone'),
-            'jam_operasional' => $request->input('operational_hours'),
-            'media_sosial' => $request->input('social_media'),
-            'google_maps' => $request->input('maps_link'),
-            'deskripsi' => $request->input('description'),
-            'nama_bank' => $request->input('nama_bank'),
-            'no_rekening' => $request->input('no_rekening'),
-            'nama_pemilik' => $request->input('nama_pemilik'),
-        ]);
-
-        // Handle Upload Gambar QRIS
-        if ($request->hasFile('foto_qris')) {
-            $path = $request->file('foto_qris')->store('qris', 'public');
-            $data['foto_qris'] = $path;
+            $validated['foto_studio'] = $photoPath;
         }
 
-        $studio->fill($data)->save();
+        $studio->fill($validated)->save();
+
+        if ($previousPhoto && isset($validated['foto_studio']) && $previousPhoto !== $validated['foto_studio']) {
+            Storage::disk('public')->delete($previousPhoto);
+        }
 
         return redirect()->back()->with('success', 'Profil studio berhasil diperbarui!');
     }
@@ -598,30 +584,39 @@ class AdminsController extends Controller
     public function fotografy()
     {
         $pakets = PhotographyPackage::latest()->get();
+        $packageCategories = PhotographyPackage::query()
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
 
-        return view('TemplateAdmin.fotografy', compact('pakets'));
+        return view('TemplateAdmin.fotografy', compact('pakets', 'packageCategories'));
     }
 
     public function storeFotografy(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'duration' => 'required|string',
-            'facilities' => 'required|string',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:80'],
+            'price' => ['required', 'numeric'],
+            'duration' => $this->durationRules(),
+            'facilities' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'bonus' => ['nullable', 'string'],
+            'is_wedding' => ['nullable', 'boolean'],
+            'photos' => ['sometimes', 'array', 'max:10'],
+            'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
-        // Mengambil nilai is_wedding (jika dicentang bernilai 1, jika tidak bernilai 0)
-        $isWedding = $request->has('is_wedding') ? 1 : 0;
-
         PhotographyPackage::create([
-            'name' => $request->name,
-            'is_wedding' => $isWedding, // <-- Simpan ke database
-            'price' => $request->price,
-            'duration' => $request->duration,
-            'facilities' => $request->facilities,
-            'description' => $request->description,
-            'bonus' => $request->bonus,
+            'name' => $validated['name'],
+            'category' => trim($validated['category']),
+            'is_wedding' => $request->boolean('is_wedding'),
+            'price' => $validated['price'],
+            'duration' => $validated['duration'],
+            'facilities' => $validated['facilities'],
+            'description' => $validated['description'] ?? null,
+            'bonus' => $validated['bonus'] ?? null,
+            'photos' => $this->storePackagePhotos($request->file('photos', [])),
         ]);
 
         return redirect()->back()->with('success', 'Paket fotografi berhasil ditambahkan.');
@@ -629,29 +624,70 @@ class AdminsController extends Controller
 
     public function updateFotografy(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'duration' => 'required|string',
-            'facilities' => 'required|string',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:80'],
+            'price' => ['required', 'numeric'],
+            'duration' => $this->durationRules(),
+            'facilities' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'bonus' => ['nullable', 'string'],
+            'is_wedding' => ['nullable', 'boolean'],
+            'photos' => ['sometimes', 'array', 'max:10'],
+            'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $paket = PhotographyPackage::findOrFail($id);
-
-        // Cek apakah checkbox di-centang saat update
-        $isWedding = $request->has('is_wedding') ? 1 : 0;
+        $newPhotos = $this->storePackagePhotos($request->file('photos', []));
 
         $paket->update([
-            'name' => $request->name,
-            'is_wedding' => $isWedding, // <-- Perbarui data di database
-            'price' => $request->price,
-            'duration' => $request->duration,
-            'facilities' => $request->facilities,
-            'description' => $request->description,
-            'bonus' => $request->bonus,
+            'name' => $validated['name'],
+            'category' => trim($validated['category']),
+            'is_wedding' => $request->boolean('is_wedding'),
+            'price' => $validated['price'],
+            'duration' => $validated['duration'],
+            'facilities' => $validated['facilities'],
+            'description' => $validated['description'] ?? null,
+            'bonus' => $validated['bonus'] ?? null,
+            'photos' => [...($paket->photos ?? []), ...$newPhotos],
         ]);
 
         return redirect()->back()->with('success', 'Paket fotografi berhasil diperbarui.');
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $photos
+     * @return array<int, string>
+     */
+    private function storePackagePhotos(array $photos): array
+    {
+        $storedPhotos = [];
+
+        foreach ($photos as $photo) {
+            $path = $photo->storePublicly('packages', 'public');
+
+            if ($path === false) {
+                throw new RuntimeException('Foto paket gagal disimpan.');
+            }
+
+            $storedPhotos[] = $path;
+        }
+
+        return $storedPhotos;
+    }
+
+    private function durationRules(): array
+    {
+        return [
+            'bail',
+            'required',
+            'string',
+            function (string $attribute, mixed $value, Closure $fail): void {
+                if (! is_string($value) || ! SessionDuration::isValid($value)) {
+                    $fail('Gunakan format durasi seperti 4 jam, 10 menit, 30 detik, atau 1 jam 30 menit.');
+                }
+            },
+        ];
     }
 
     /**

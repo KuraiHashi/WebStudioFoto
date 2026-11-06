@@ -23,5 +23,6 @@ class StudioProfile extends Model
         'no_rekening',
         'nama_pemilik',
         'foto_qris',
+        'foto_studio',
     ];
 }

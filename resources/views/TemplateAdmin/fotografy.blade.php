@@ -42,6 +42,7 @@
                     <thead>
                         <tr>
                             <th style="padding: 12px; text-align: left;">Nama Paket</th>
+                            <th style="padding: 12px; text-align: left;">Kategori</th>
                             <th style="padding: 12px; text-align: left;">Harga</th>
                             <th style="padding: 12px; text-align: left;">Durasi</th>
                             <th style="padding: 12px; text-align: left;">Deskripsi</th>
@@ -60,6 +61,7 @@
                                     <br><small style="color: #b8860b;">Bonus: {{ $item->bonus }}</small>
                                 @endif
                             </td>
+                            <td style="padding: 12px;">{{ $item->category }}</td>
                             <td style="padding: 12px;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
                             <td style="padding: 12px;">{{ $item->duration }}</td>
                             <td style="padding: 12px;">{{ $item->description ?? '-' }}</td>
@@ -80,7 +82,7 @@
                         </tr>
                         @empty
                             <tr>
-                                <td colspan="5" style="padding: 20px; text-align: center; color: #777;">Belum ada paket fotografi tersedia.</td>
+                                <td colspan="6" style="padding: 20px; text-align: center; color: #777;">Belum ada paket fotografi tersedia.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -107,6 +109,13 @@
                         <input name="name" value="{{ $item->name }}" required />
                     </div>
                     <div class="fld">
+                        <label>Kategori filter</label>
+                        <input name="category" value="{{ $item->category }}" list="package-category-options" maxlength="80" placeholder="mis. Wedding atau Pas Foto" required />
+                        <small style="color: #666;">Pilih kategori yang ada atau ketik kategori baru.</small>
+                    </div>
+                </div>
+                <div class="r2">
+                    <div class="fld">
                         <label>Harga (Rp)</label>
                         <input name="price" value="{{ $item->price }}" inputmode="numeric" required />
                     </div>
@@ -114,7 +123,8 @@
                 <div class="r2">
                     <div class="fld">
                         <label>Durasi</label>
-                        <input name="duration" value="{{ $item->duration }}" required />
+                        <input name="duration" value="{{ $item->duration }}" placeholder="mis. 4 jam, 10 menit, 30 detik, atau 1 hari" required />
+                        <small style="color: #666;">Gunakan satuan jam, menit, detik, atau hari.</small>
                     </div>
                     <div class="fld">
                         <label>Bonus (opsional)</label>
@@ -145,7 +155,7 @@
                     <label>Tambah Foto Paket (Opsional)</label>
                     <label class="drop">
                         <span class="dn">Pilih atau seret foto tambahan paket</span><br />
-                        <span class="note">JPG / PNG / WEBP · maks. 2 MB per file</span>
+                        <span class="note">JPG / PNG / WEBP · maks. 4 MB per file</span>
                         <input type="file" name="photos[]" accept=".jpg,.jpeg,.png,.webp,image/*" multiple />
                     </label>
                 </div>
@@ -186,6 +196,13 @@
                         <input name="name" required />
                     </div>
                     <div class="fld">
+                        <label>Kategori filter</label>
+                        <input name="category" list="package-category-options" maxlength="80" placeholder="mis. Wedding, Prewedding, Wisuda, Pas Foto" required />
+                        <small style="color: #666;">Pilih kategori yang ada atau ketik kategori baru.</small>
+                    </div>
+                </div>
+                <div class="r2">
+                    <div class="fld">
                         <label>Harga (Rp)</label>
                         <input name="price" inputmode="numeric" required />
                     </div>
@@ -193,7 +210,8 @@
                 <div class="r2">
                     <div class="fld">
                         <label>Durasi</label>
-                        <input name="duration" placeholder="mis. 2 jam atau 1 Hari" required />
+                        <input name="duration" placeholder="mis. 4 jam, 10 menit, 30 detik, atau 1 hari" required />
+                        <small style="color: #666;">Gunakan satuan jam, menit, detik, atau hari.</small>
                     </div>
                     <div class="fld">
                         <label>Bonus (opsional)</label>
@@ -235,6 +253,12 @@
             </form>
         </div>
     </div>
+
+    <datalist id="package-category-options">
+        @foreach ($packageCategories as $category)
+            <option value="{{ $category }}">
+        @endforeach
+    </datalist>
 
     {{-- Script SweetAlert2 & Modal Handler --}}
     @if (session('success'))

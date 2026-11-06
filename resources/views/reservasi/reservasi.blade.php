@@ -34,7 +34,9 @@
                             @foreach ($packages as $pkg)
                                 <option value="{{ $pkg->id }}" data-name="{{ $pkg->name }}"
                                     data-price="{{ number_format($pkg->price, 0, ',', '.') }}"
-                                    data-duration="{{ $pkg->duration }}" data-facilities="{{ $pkg->facilities }}"
+                                    data-duration="{{ $pkg->duration }}"
+                                    data-duration-seconds="{{ $pkg->durationInSeconds() }}"
+                                    data-facilities="{{ $pkg->facilities }}"
                                     data-wedding="{{ in_array($pkg->id, $weddingPackageIds, true) ? '1' : '0' }}"
                                     {{ old('photography_package_id', $selectedPackageId ?? null) == $pkg->id ? 'selected' : '' }}>
                                     {{ $pkg->name }}
@@ -452,9 +454,9 @@
                 }).format(date);
             }
 
-            function getDurationMinutes(durationText) {
-                const match = durationText ? durationText.match(/\d+/) : null;
-                return (match ? Number.parseInt(match[0], 10) : 2) * 60;
+            function getDurationMinutes(durationSeconds) {
+                const seconds = Number(durationSeconds);
+                return Number.isFinite(seconds) && seconds > 0 ? seconds / 60 : 120;
             }
 
             function isWeddingReservation(reservation) {
@@ -468,7 +470,7 @@
                     return [];
                 }
 
-                const sessionDuration = getDurationMinutes(selectedOption.getAttribute('data-duration'));
+                const sessionDuration = getDurationMinutes(selectedOption.getAttribute('data-duration-seconds'));
                 const existingReservations = bookedSlots.filter(reservation => reservation.date === dateString);
                 const isWeddingPackage = selectedOption.getAttribute('data-wedding') === '1';
                 const selectedDate = new Date(`${dateString}T00:00:00`);
@@ -501,7 +503,7 @@
                     const overlapsReservation = existingReservations.some(reservation => {
                         const existingStart = reservation.time.split(':').slice(0, 2).reduce(
                             (total, part) => total * 60 + Number.parseInt(part, 10), 0);
-                        const existingDuration = getDurationMinutes(reservation.duration);
+                        const existingDuration = getDurationMinutes(reservation.duration_seconds);
                         return startMinutes <= existingStart + existingDuration &&
                             startMinutes + sessionDuration > existingStart;
                     });
@@ -544,7 +546,9 @@
                 }
 
                 const timeOptions = [];
-                const sessionDuration = getDurationMinutes(selectPaket.selectedOptions[0].getAttribute('data-duration'));
+                const sessionDuration = getDurationMinutes(
+                    selectPaket.selectedOptions[0].getAttribute('data-duration-seconds')
+                );
                 for (let minutes = openingTimeMinutes; minutes <= closingTimeMinutes; minutes += slotIntervalMinutes) {
                     timeOptions.push(
                         `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`

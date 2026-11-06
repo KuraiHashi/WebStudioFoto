@@ -30,6 +30,7 @@ class ReservationSubmissionTest extends TestCase
             ->assertSee('id="date-selection-error"', false)
             ->assertSee('class="reservation-booking-grid"', false)
             ->assertSee('id="available-time-slots"', false)
+            ->assertSee('data-duration-seconds="7200"', false)
             ->assertSee('type="hidden" id="rj" name="time"', false)
             ->assertSee('Detail Layanan')
             ->assertSee('Jam tersedia setiap 30 menit')
@@ -133,6 +134,39 @@ class ReservationSubmissionTest extends TestCase
 
         $this->assertDatabaseCount('reservations', 1);
         $this->assertDatabaseCount('payments', 1);
+    }
+
+    public function test_minute_duration_is_used_when_validating_a_new_reservation_schedule(): void
+    {
+        $shortPackage = $this->createPackage(['duration' => '10 menit']);
+        $existingReservation = Reservation::create($this->reservationPayload($shortPackage, [
+            'token' => 'RSV-SHORT01',
+            'time' => '10:00',
+        ]));
+        $existingReservation->payment()->create([
+            'token' => $existingReservation->token,
+            'status' => 'Menunggu pembayaran DP',
+            'tagihan' => $shortPackage->price,
+        ]);
+        $nextPackage = $this->createPackage();
+
+        $this->get(route('reservasi.booked-slots'))
+            ->assertOk()
+            ->assertJsonFragment([
+                'time' => '10:00',
+                'duration' => '10 menit',
+                'duration_seconds' => 600,
+            ]);
+
+        $this->from(route('reservasi.index'))
+            ->post(route('reservasi.store'), $this->reservationPayload($nextPackage, [
+                'time' => '10:30',
+            ]))
+            ->assertRedirect(route('reservasi.index'))
+            ->assertSessionHas('swal_success', true);
+
+        $this->assertDatabaseCount('reservations', 2);
+        $this->assertDatabaseCount('payments', 2);
     }
 
     public function test_regular_reservation_is_rejected_when_it_starts_at_an_existing_session_end(): void

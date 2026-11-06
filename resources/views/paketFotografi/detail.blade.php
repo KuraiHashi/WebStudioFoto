@@ -12,9 +12,8 @@
                 <!-- Bagian Foto Utama -->
                 <div class="ph-container">
                     @php
-                        // Cek apakah kolom photos ada isinya dan berupa array
-                        $photos = $package->photos ?? [];
-                        $mainPhoto = count($photos) > 0 ? asset('storage/' . $photos[0]) : '';
+                        $photos = is_array($package->photos) ? array_values(array_filter($package->photos)) : [];
+                        $mainPhoto = $photos[0] ?? null;
                     @endphp
 
                     <!-- Foto Utama -->
@@ -24,11 +23,18 @@
                         border-radius: 4px 4px 4px 110px;
                         max-height: 560px;
                         width: 100%;
-                        background-image: url('{{ $mainPhoto }}');
-                        background-size: cover;
-                        background-position: center;
                         transition: background-image 0.3s ease;
                         ">
+                        @if ($mainPhoto)
+                            <img id="mainPhotoImage" src="{{ asset('storage/' . $mainPhoto) }}"
+                                alt="Foto paket {{ $package->name }}"
+                                style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+                        @else
+                            <span class="package-photo-placeholder"
+                                style="position: absolute; inset: 0; display: grid; place-items: center; z-index: 1; padding: 24px; color: #fff; text-align: center;">
+                                Foto paket belum tersedia
+                            </span>
+                        @endif
                     </div>
 
                     <!-- List Thumbnail Foto di Bawah -->
@@ -36,9 +42,11 @@
                         <div class="photo-thumbnails"
                             style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
                             @foreach ($photos as $index => $photo)
-                                <div class="thumb-item {{ $index === 0 ? 'active' : '' }}"
-                                    onclick="changeMainPhoto('{{ asset('storage/' . $photo) }}', this)"
+                                <button type="button" class="thumb-item {{ $index === 0 ? 'active' : '' }}"
+                                    data-image="{{ asset('storage/' . $photo) }}"
+                                    aria-label="Tampilkan foto paket {{ $index + 1 }}"
                                     style="
+                                     padding: 0;
                                      width: 70px; 
                                      height: 70px; 
                                      border-radius: 8px; 
@@ -49,7 +57,7 @@
                                      flex-shrink: 0;
                                      border: 2px solid {{ $index === 0 ? 'var(--bronze, #8C7A6B)' : 'transparent' }};
                                      transition: all 0.2s ease;">
-                                </div>
+                                </button>
                             @endforeach
                         </div>
                     @endif
@@ -94,16 +102,14 @@
 
     <!-- Script untuk mengganti foto utama saat thumbnail diklik -->
     <script>
-        function changeMainPhoto(imageSrc, element) {
-            // Ubah background foto utama
-            document.getElementById('mainPhoto').style.backgroundImage = `url('${imageSrc}')`;
-
-            // Atur efek aktif (border) pada thumbnail
-            const thumbnails = document.querySelectorAll('.thumb-item');
-            thumbnails.forEach(thumb => {
-                thumb.style.border = '2px solid transparent';
+        document.querySelectorAll('.thumb-item').forEach((thumbnail) => {
+            thumbnail.addEventListener('click', () => {
+                document.getElementById('mainPhotoImage').src = thumbnail.dataset.image;
+                document.querySelectorAll('.thumb-item').forEach((item) => {
+                    item.style.borderColor = 'transparent';
+                });
+                thumbnail.style.borderColor = 'var(--bronze, #8C7A6B)';
             });
-            element.style.border = '2px solid var(--bronze, #8C7A6B)';
-        }
+        });
     </script>
 @endsection

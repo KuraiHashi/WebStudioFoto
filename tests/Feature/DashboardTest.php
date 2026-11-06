@@ -6,6 +6,7 @@ use App\Models\Payment;
 use App\Models\PaymentHistory;
 use App\Models\PhotographyPackage;
 use App\Models\Reservation;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,13 @@ use Tests\TestCase;
 class DashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAs(User::factory()->admin()->create());
+    }
 
     public function test_dashboard_cards_show_the_correct_reservation_counts(): void
     {
@@ -30,6 +38,11 @@ class DashboardTest extends TestCase
             ->assertSee('Cek bukti pembayaran')
             ->assertSee('Lunas / selesai')
             ->assertDontSee('Dari booking sampai hasil foto');
+
+        $response
+            ->assertSee('btn-workflow', false)
+            ->assertDontSee('class="btn sm btn-tagihan"', false)
+            ->assertDontSee('class="btn sm btn-reservasi"', false);
 
         $this->assertSame(3, substr_count($response->getContent(), 'class="kp-card'));
     }
@@ -446,7 +459,7 @@ class DashboardTest extends TestCase
             ->assertSee('https://drive.google.com/folder');
     }
 
-    public function test_customer_cannot_pay_balance_before_admin_completes_the_session(): void
+    public function test_customer_cannot_pay_balance_before_the_scheduled_session_ends(): void
     {
         Storage::fake('public');
         $package = $this->createPackage();
@@ -454,9 +467,14 @@ class DashboardTest extends TestCase
             $package,
             'BALANCE-EARLY-001',
             'Pelanggan',
-            now()->toDateString(),
+            now()->addDay()->toDateString(),
             'Menunggu pelunasan'
         );
+
+        $this->get(route('reservasi.pembayaran', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Form pelunasan tersedia setelah waktu sesi pemotretan berakhir.')
+            ->assertDontSee('NOMINAL PELUNASAN');
 
         $this->from(route('reservasi.pembayaran', ['token' => $reservation->token]))
             ->post(route('reservasi.payment.store'), [
@@ -469,6 +487,147 @@ class DashboardTest extends TestCase
             ->assertSessionHasErrors('token');
 
         $this->assertDatabaseCount('payment_histories', 0);
+    }
+
+    public function test_customer_can_view_and_submit_balance_payment_after_the_scheduled_session_ends(): void
+    {
+        Storage::fake('public');
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'BALANCE-READY-001',
+            'Pelanggan',
+            now()->subDay()->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $reservation->payment->update(['total_paid' => 500000]);
+
+        $this->get(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Bayar pelunasan')
+            ->assertSee('Jadwal sesi pemotretan telah berakhir.');
+
+        $this->get(route('reservasi.pembayaran', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('NOMINAL PELUNASAN')
+            ->assertSee('max="500000"', false);
+
+        $this->post(route('reservasi.payment.store'), [
+            'token' => $reservation->token,
+            'amount' => 500000,
+            'payment_method' => 'Transfer Bank',
+            'receipt_photo' => $this->fakeReceipt(),
+        ])->assertRedirect(route('reservasi.pembayaran', ['token' => $reservation->token]));
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $reservation->payment->id,
+            'status' => 'Verifikasi pelunasan',
+            'total_paid' => 500000,
+        ]);
+        $this->assertDatabaseHas('payment_histories', [
+            'payment_id' => $reservation->payment->id,
+            'status' => 'menunggu_verifikasi',
+            'amount' => 500000,
+        ]);
+    }
+
+    public function test_admin_and_customer_workflows_recognize_a_custom_minute_duration(): void
+    {
+        $sessionStart = now()->startOfDay()->setTime(10, 0);
+        $this->travelTo($sessionStart->copy()->addMinutes(8));
+
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'MINUTE-SESSION-001',
+            'Pelanggan',
+            $sessionStart->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $package->update(['duration' => '7 menit']);
+        $reservation->payment->update(['total_paid' => 500000]);
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-session-ended="1"', false);
+
+        $this->get(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Bayar pelunasan')
+            ->assertSee('Jadwal sesi pemotretan telah berakhir.');
+
+        $this->put(route('admin.reservasi.session-complete', $reservation))
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'session_completed_at' => now()->toDateTimeString(),
+        ]);
+    }
+
+    public function test_admin_can_complete_a_session_after_a_custom_seconds_duration(): void
+    {
+        $sessionStart = now()->startOfDay()->setTime(10, 0);
+        $this->travelTo($sessionStart->copy()->addSeconds(31));
+
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'SECONDS-SESSION-001',
+            'Pelanggan',
+            $sessionStart->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $package->update(['duration' => '30 detik']);
+
+        $this->put(route('admin.reservasi.session-complete', $reservation))
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'session_completed_at' => now()->toDateTimeString(),
+        ]);
+    }
+
+    public function test_current_package_duration_and_studio_timezone_enable_balance_workflow_for_existing_reservation(): void
+    {
+        $sessionStart = now()->startOfDay()->setTime(18, 0);
+        $this->travelTo($sessionStart->copy()->addSeconds(15));
+
+        $package = $this->createPackage();
+        $reservation = $this->createReservation(
+            $package,
+            'LOCAL-TIME-SESSION-001',
+            'Pelanggan',
+            $sessionStart->toDateString(),
+            'Menunggu pelunasan'
+        );
+        $reservation->update([
+            'time' => '18:00:00',
+            'duration' => '4 jam',
+        ]);
+        $package->update(['duration' => '10 detik']);
+        $reservation->payment->update(['total_paid' => 500000]);
+
+        $this->assertSame('Asia/Jakarta', config('app.timezone'));
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-session-ended="1"', false)
+            ->assertSee('Tandai sesi selesai')
+            ->assertSee('buka pelunasan');
+
+        $this->get(route('reservasi.result', ['token' => $reservation->token]))
+            ->assertOk()
+            ->assertSee('Bayar pelunasan');
+
+        $this->put(route('admin.reservasi.session-complete', $reservation))
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'session_completed_at' => now()->toDateTimeString(),
+        ]);
     }
 
     private function seedDashboardReservations(): void
