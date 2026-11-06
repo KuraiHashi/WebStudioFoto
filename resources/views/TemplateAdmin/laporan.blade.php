@@ -170,7 +170,7 @@
             }
         }
     </style>
-    <main class="main">
+    <main class="main report-page">
         <div class="top">
             <div>
                 <div class="eyebrow">Laporan</div>
@@ -265,17 +265,17 @@
                     <tbody>
                         @forelse ($reservations as $reservation)
                             <tr>
-                                <td>{{ $reservation->token }}</td>
-                                <td>{{ $reservation->name }}</td>
-                                <td>{{ $reservation->package?->name ?? 'Paket tidak tersedia' }}</td>
-                                <td>{{ \Illuminate\Support\Carbon::parse($reservation->date)->format('d M Y') }}</td>
-                                <td>Rp {{ number_format((float) ($reservation->payment?->tagihan ?? 0), 0, ',', '.') }}</td>
-                                <td>Rp {{ number_format((float) ($reservation->payment?->total_paid ?? 0), 0, ',', '.') }}</td>
-                                <td><span class="pill">{{ $reservation->payment?->status ?? 'Belum ada pembayaran' }}</span></td>
+                                <td data-l="Kode">{{ $reservation->token }}</td>
+                                <td data-l="Pelanggan">{{ $reservation->name }}</td>
+                                <td data-l="Paket">{{ $reservation->package?->name ?? 'Paket tidak tersedia' }}</td>
+                                <td data-l="Jadwal">{{ \Illuminate\Support\Carbon::parse($reservation->date)->format('d M Y') }}</td>
+                                <td data-l="Total">Rp {{ number_format((float) ($reservation->payment?->tagihan ?? 0), 0, ',', '.') }}</td>
+                                <td data-l="Diterima">Rp {{ number_format((float) ($reservation->payment?->total_paid ?? 0), 0, ',', '.') }}</td>
+                                <td data-l="Status"><span class="pill">{{ $reservation->payment?->status ?? 'Belum ada pembayaran' }}</span></td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="note">Data laporan tidak ditemukan. Ubah filter lalu cari kembali.</td>
+                                <td colspan="7" class="note" data-l="Informasi">Data laporan tidak ditemukan. Ubah filter lalu cari kembali.</td>
                             </tr>
                         @endforelse
                     </tbody>

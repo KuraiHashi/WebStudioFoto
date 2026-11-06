@@ -68,35 +68,13 @@
                 @endif
             </form>
             <div class="acts" style="margin-top: 16px">
-                <button type="button" class="btn sm no" id="btn-delete-selected">Hapus terpilih</button>
+                <button type="button" class="btn sm delete-btn" id="btn-delete-selected">Hapus terpilih</button>
             </div>
         </div>
     </main>
 
-    {{-- Script SweetAlert2 --}}
+    {{-- Handler alert dan konfirmasi SweetAlert2 --}}
     <script>
-        // 1. Notifikasi Sukses saat Upload / Session Laravel
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: '{{ session('success') }}',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        @endif
-
-        // 2. Notifikasi Error Validasi Laravel
-        @if ($errors->any())
-            Swal.fire({
-                icon: 'error',
-                title: 'Tidak dapat menyimpan perubahan',
-                text: @json($errors->first()),
-                confirmButtonText: 'OK'
-            });
-        @endif
-
-        // 2. Handler Tombol Hapus Terpilih dengan SweetAlert2
         document.getElementById('btn-delete-selected').addEventListener('click', function() {
             let selectedIds = [];
             document.querySelectorAll('.chk:checked').forEach(function(checkbox) {
@@ -119,7 +97,7 @@
                 text: "Foto yang dipilih akan dihapus permanen!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
+                confirmButtonColor: '#a97f49',
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Ya, hapus!',
                 cancelButtonText: 'Batal'

@@ -2,7 +2,7 @@
 @section('dashboard', 'on')
 
 @section('konten')
-    <main class="main">
+    <main class="main dashboard-page">
         <!-- Top Header Section -->
         <div class="top flex-between wrap gap-md">
             <div>
@@ -11,17 +11,6 @@
             </div>
             <a class="btn sm" href="{{ route('admin.laporan') }}">Lihat laporan</a>
         </div>
-
-        @if (session('success'))
-            <div class="dashboard-feedback success" role="status">{{ session('success') }}</div>
-        @endif
-        @if ($errors->any())
-            <div class="dashboard-feedback error" role="alert">
-                @foreach ($errors->all() as $error)
-                    <p>{{ $error }}</p>
-                @endforeach
-            </div>
-        @endif
 
         <div class="kp dashboard-kpis" id="kp">
             <a class="kp-card {{ request('filter') === 'new' ? 'active' : '' }}"
@@ -112,7 +101,7 @@
                                         'Verifikasi pelunasan' => 'Cek bukti pelunasan',
                                         'Selesai' => match ($item->photo_status) {
                                             'diproses' => 'Foto sedang diproses',
-                                            'siap' => 'Foto siap dikirim',
+                                            'siap' => 'Hasil foto sudah dikirim',
                                             default => 'Menunggu hasil foto',
                                         },
                                         'Dibatalkan' => 'Dibatalkan',
@@ -163,7 +152,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="note text-center">Data reservasi tidak ditemukan.</td>
+                                    <td colspan="6" class="note text-center" data-l="Informasi">Data reservasi tidak ditemukan.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -201,8 +190,6 @@
                 <i>Bukti menunggu verifikasi</i><span id="vProofAmount">-</span>
             </div>
             <p class="workflow-instruction" id="workflowInstruction"></p>
-            <p class="dashboard-feedback error" id="paymentMismatchWarning" role="alert" style="display:none;"></p>
-
             <div id="vReceiptContainer" class="receipt-preview-container" style="display: none;">
                 <label class="receipt-label">Bukti pembayaran terbaru:</label>
                 <a id="vReceiptLink" href="#" target="_blank" rel="noopener">
@@ -377,14 +364,11 @@
                 document.getElementById('vTotalBill').textContent = formatCurrency(totalBill);
                 document.getElementById('vTotalPaid').textContent = formatCurrency(totalPaid);
                 document.getElementById('vProofAmount').textContent = formatCurrency(proofAmount);
-                const paymentWarning = document.getElementById('paymentMismatchWarning');
-                paymentWarning.style.display = 'none';
-                paymentWarning.textContent = '';
+                let paymentWarning = '';
                 if (btn.dataset.status === 'Verifikasi pelunasan' && proofAmount !== remaining) {
-                    paymentWarning.textContent = proofAmount > remaining
+                    paymentWarning = proofAmount > remaining
                         ? `Bukti lebih besar dari sisa tagihan (${formatCurrency(remaining)}). Perbaiki total tagihan melalui tombol Tagihan sebelum menyetujui.`
                         : `Bukti belum menutup sisa tagihan (${formatCurrency(remaining)}). Jangan setujui sebelum nominal sesuai.`;
-                    paymentWarning.style.display = 'block';
                 }
 
                 const receiptUrl = btn.dataset.receipt;
@@ -501,6 +485,14 @@
                 formPhotoWorkflow.style.display = canManagePhotos ? 'block' : 'none';
 
                 openModal('modalVerify');
+                if (paymentWarning) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Nominal pembayaran tidak sesuai',
+                        text: paymentWarning,
+                        confirmButtonText: 'OK'
+                    });
+                }
             }
         });
 

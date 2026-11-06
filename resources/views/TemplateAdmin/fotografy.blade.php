@@ -52,7 +52,7 @@
                     <tbody>
                         @forelse ($pakets as $item)
                         <tr>
-                            <td style="padding: 12px;">
+                            <td data-l="Nama paket" style="padding: 12px;">
                                 <strong>{{ $item->name }}</strong>
                                 @if($item->is_wedding)
                                     <br><span style="background: #d4af37; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 3px;">Wedding / Full Day</span>
@@ -61,17 +61,17 @@
                                     <br><small style="color: #b8860b;">Bonus: {{ $item->bonus }}</small>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">{{ $item->category }}</td>
-                            <td style="padding: 12px;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                            <td style="padding: 12px;">{{ $item->duration }}</td>
-                            <td style="padding: 12px;">{{ $item->description ?? '-' }}</td>
-                            <td style="padding: 12px; text-align: center;">
+                            <td data-l="Kategori" style="padding: 12px;">{{ $item->category }}</td>
+                            <td data-l="Harga" style="padding: 12px;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                            <td data-l="Durasi" style="padding: 12px;">{{ $item->duration }}</td>
+                            <td data-l="Deskripsi" style="padding: 12px;">{{ $item->description ?? '-' }}</td>
+                            <td data-l="Aksi" style="padding: 12px; text-align: center;">
                                 <div style="display: flex; justify-content: center; gap: 4px;">
                                     <!-- Tombol Edit -->
                                     <button type="button" class="btn sm" onclick="openModal('m-edit-{{ $item->id }}')">Edit</button>
 
                                     <!-- Tombol Hapus -->
-                                    <button type="button" class="btn sm" style="background: black; color: white;" onclick="confirmDelete('{{ $item->id }}')">Hapus</button>
+                                    <button type="button" class="btn sm delete-btn" onclick="confirmDelete('{{ $item->id }}')">Hapus</button>
                                     
                                     <form id="delete-form-{{ $item->id }}" action="{{ route('admin.fotografi.destroy', $item->id) }}" method="POST" style="display: none;">
                                         @csrf
@@ -260,30 +260,7 @@
         @endforeach
     </datalist>
 
-    {{-- Script SweetAlert2 & Modal Handler --}}
-    @if (session('success'))
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: "{{ session('success') }}",
-                showConfirmButton: false,
-                timer: 2500
-            });
-        </script>
-    @endif
-
-    @if ($errors->any())
-        <script>
-            Swal.fire({
-                icon: 'error',
-                title: 'Terjadi Kesalahan!',
-                html: `{!! implode('<br>', $errors->all()) !!}`,
-                confirmButtonText: 'OK'
-            });
-        </script>
-    @endif
-
+    {{-- Modal Handler dengan konfirmasi SweetAlert2 --}}
     <script>
         function openModal(modalId) {
             let modal = document.getElementById(modalId);
@@ -301,7 +278,7 @@
                 text: "Paket fotografi yang dihapus tidak dapat dikembalikan!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#dc3545',
+                confirmButtonColor: '#a97f49',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Ya, hapus!',
                 cancelButtonText: 'Batal'

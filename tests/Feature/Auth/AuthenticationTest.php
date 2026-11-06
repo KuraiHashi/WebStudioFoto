@@ -38,12 +38,33 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->admin()->create();
 
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'wrong-password',
-        ]);
+        $this->from('/login')
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])
+            ->assertRedirect('/login');
 
         $this->assertGuest();
+
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Swal.fire', false)
+            ->assertSee('Email atau kata sandi yang Anda masukkan tidak sesuai.');
+    }
+
+    public function test_login_validation_alerts_are_displayed_in_indonesian(): void
+    {
+        $this->from('/login')
+            ->post('/login', [
+                'email' => '',
+                'password' => '',
+            ])
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'email' => 'alamat email wajib diisi.',
+                'password' => 'kata sandi wajib diisi.',
+            ]);
     }
 
     public function test_customers_cannot_authenticate_to_the_admin_panel(): void
@@ -70,17 +91,28 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
-    public function test_admins_with_an_initial_password_are_sent_to_account_settings(): void
+    public function test_admins_with_an_initial_password_can_open_the_dashboard_without_changing_it(): void
     {
         $user = User::factory()->admin()->create(['must_change_password' => true]);
 
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertRedirect(route('admin.account.edit'));
+        ])->assertRedirect(route('admin.dashboard'));
 
-        $this->get(route('admin.dashboard'))
-            ->assertRedirect(route('admin.account.edit'));
+        $this->get(route('admin.dashboard'))->assertOk();
+    }
+
+    public function test_super_admin_with_an_initial_password_can_open_the_dashboard_without_changing_it(): void
+    {
+        $superAdmin = User::factory()->superAdmin()->create(['must_change_password' => true]);
+
+        $this->post('/login', [
+            'email' => $superAdmin->email,
+            'password' => 'password',
+        ])->assertRedirect(route('admin.dashboard'));
+
+        $this->get(route('admin.dashboard'))->assertOk();
     }
 
     public function test_admin_is_not_asked_to_change_password_again_after_changing_it_and_logging_in_again(): void
@@ -93,7 +125,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'InitialAdminPassword!',
-        ])->assertRedirect(route('admin.account.edit'));
+        ])->assertRedirect(route('admin.dashboard'));
 
         $this->put(route('admin.account.update'), [
             'email' => $user->email,

@@ -26,7 +26,7 @@ class AdminAccountController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
             'current_password' => ['required', 'current_password'],
-            'password' => [$user->must_change_password ? 'required' : 'nullable', 'string', 'min:12', 'confirmed'],
+            'password' => ['nullable', 'string', 'min:12', 'confirmed'],
         ], [
             'password.min' => 'Password baru harus terdiri dari minimal 12 karakter.',
         ]);
@@ -35,9 +35,9 @@ class AdminAccountController extends Controller
 
         if (filled($validated['password'] ?? null)) {
             $user->password = $validated['password'];
-            $user->must_change_password = false;
         }
 
+        $user->must_change_password = false;
         $user->save();
         $request->session()->regenerate();
 
@@ -58,12 +58,9 @@ class AdminAccountController extends Controller
 
         $user->email = $validated['email'];
         $user->password = $validated['password'];
-        $user->must_change_password = true;
+        $user->must_change_password = false;
         $user->save();
 
-        return redirect()->route('admin.account.edit')->with(
-            'success',
-            'Akun admin diperbarui. Admin tersebut wajib mengganti password saat login berikutnya.'
-        );
+        return redirect()->route('admin.account.edit')->with('success', 'Akun admin berhasil diperbarui.');
     }
 }

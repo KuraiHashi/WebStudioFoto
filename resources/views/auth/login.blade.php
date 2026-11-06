@@ -12,6 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('Assets/css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -44,10 +45,6 @@
                 <h2>Login <em>Admin</em></h2>
                 <p class="login-intro">Masuk dengan akun studio untuk melanjutkan.</p>
 
-                @if ($errors->any())
-                    <div class="login-error" role="alert">{{ $errors->first() }}</div>
-                @endif
-
                 <div class="fld">
                     <label for="email">Email</label>
                     <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
@@ -67,6 +64,16 @@
             </form>
         </section>
     </main>
+    @if ($errors->any())
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Login gagal',
+                text: @json($errors->first()),
+                confirmButtonText: 'OK'
+            });
+        </script>
+    @endif
 </body>
 
 </html>

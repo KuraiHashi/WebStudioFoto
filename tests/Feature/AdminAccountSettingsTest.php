@@ -58,6 +58,29 @@ class AdminAccountSettingsTest extends TestCase
         ]);
     }
 
+    public function test_admin_with_an_initial_password_can_update_email_without_changing_password(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'password' => 'CurrentAdminPassword!',
+            'must_change_password' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.account.update'), [
+                'email' => 'updated-admin@example.test',
+                'current_password' => 'CurrentAdminPassword!',
+            ])
+            ->assertRedirect(route('admin.account.edit'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $admin->id,
+            'email' => 'updated-admin@example.test',
+            'must_change_password' => false,
+        ]);
+        $this->assertTrue(Hash::check('CurrentAdminPassword!', $admin->fresh()->password));
+    }
+
     public function test_admin_cannot_reset_another_admin_account(): void
     {
         $admin = User::factory()->admin()->create();
@@ -77,7 +100,7 @@ class AdminAccountSettingsTest extends TestCase
         ]);
     }
 
-    public function test_super_admin_can_reset_an_admin_account_and_force_password_rotation(): void
+    public function test_super_admin_can_reset_an_admin_account_without_forcing_password_rotation(): void
     {
         $superAdmin = User::factory()->superAdmin()->create();
         $admin = User::factory()->admin()->create();
@@ -95,7 +118,7 @@ class AdminAccountSettingsTest extends TestCase
             'id' => $admin->id,
             'email' => 'reset-admin@example.test',
             'role' => User::ROLE_ADMIN,
-            'must_change_password' => true,
+            'must_change_password' => false,
         ]);
         $this->assertTrue(Hash::check('ReplacementPassword123!', $admin->fresh()->password));
     }
@@ -135,5 +158,18 @@ class AdminAccountSettingsTest extends TestCase
             ->assertSee('Keluar')
             ->assertDontSee('<span>Akun Admin</span>', false)
             ->assertDontSee('<span>Logout</span>', false);
+    }
+
+    public function test_admin_flash_messages_are_displayed_with_sweetalert2(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->withSession(['success' => 'Pengaturan akun berhasil disimpan.'])
+            ->get(route('admin.account.edit'))
+            ->assertOk()
+            ->assertSee('Swal.fire', false)
+            ->assertSee('Pengaturan akun berhasil disimpan.')
+            ->assertDontSee('dashboard-feedback', false);
     }
 }

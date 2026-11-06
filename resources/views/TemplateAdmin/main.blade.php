@@ -133,6 +133,27 @@
     </div>
     <script src="{{ asset('Assets/js/app.js') }}"></script>
     @stack('scripts')
+    <script>
+        const adminSuccessMessage = @json(session('success'));
+        const adminValidationErrors = @json($errors->all());
+
+        if (adminSuccessMessage) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: adminSuccessMessage,
+                timer: 2500,
+                showConfirmButton: false
+            });
+        } else if (adminValidationErrors.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Periksa kembali data Anda',
+                text: adminValidationErrors.join('\n'),
+                confirmButtonText: 'OK'
+            });
+        }
+    </script>
 
 </body>
 

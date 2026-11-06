@@ -118,7 +118,11 @@
                             <div id="qris_details_container" style="display: none; margin-bottom: 20px; padding: 16px; background: #f3ede3; border: 1px solid #d1c7bd; border-radius: 6px; text-align: center;">
                                 <h4 style="margin-top: 0; font-size: 15px; color: #191512;">Scan QRIS Liquif Picture</h4>
                                 <div style="margin: 12px 0;">
-                                    <img src="{{ asset('Assets/img/qris-default.png') }}" alt="QRIS" style="max-width: 180px; height: auto; border-radius: 6px;">
+                                    @if ($qrisRekening)
+                                        <img src="{{ asset('storage/' . $qrisRekening->foto_qris) }}" alt="QRIS Liquif Picture" style="max-width: 180px; height: auto; border-radius: 6px;">
+                                    @else
+                                        <span style="font-size: 13px; color: #666;">Foto QRIS belum tersedia. Silakan hubungi admin studio.</span>
+                                    @endif
                                 </div>
                                 <span style="font-size: 12px; color: #666;">Dapat di-scan dengan seluruh aplikasi e-Wallet & Mobile Banking</span>
                             </div>

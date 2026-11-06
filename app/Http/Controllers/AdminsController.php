@@ -564,7 +564,7 @@ class AdminsController extends Controller
         if ($request->hasFile('foto_studio')) {
             $photoPath = $request->file('foto_studio')->store('studio', 'public');
             if ($photoPath === false) {
-                throw new RuntimeException('The studio photo could not be stored.');
+                throw new RuntimeException('Foto studio gagal disimpan.');
             }
 
             $validated['foto_studio'] = $photoPath;
