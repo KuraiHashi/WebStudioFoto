@@ -32,9 +32,8 @@
         <div class="pk rv" id="packageContainer" style="display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 24px; padding-bottom: 20px; scroll-snap-type: x mandatory;">
             @forelse($packages as $index => $package)
                 @php
-                    $isFeatured = $index === 1;
-                    $romans = ['I', 'II', 'III', 'IV', 'V', 'VI'];
-                    $rn = $romans[$index] ?? $index + 1;
+                    $isFeatured = false;
+                    $rn = $index + 1;
 
                     // Memecah fasilitas berdasarkan titik tengah (·) ATAU koma (,)
                     $facilities = preg_split('/[·,]/', $package->facilities);
