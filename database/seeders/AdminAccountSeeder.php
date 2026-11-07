@@ -4,8 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class AdminAccountSeeder extends Seeder
 {
@@ -14,26 +13,30 @@ class AdminAccountSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        User::truncate(); // Hati-hati: ini akan menghapus semua data user jika tabel di-truncate. Jika hanya ingin update/create, bisa menggunakan updateOrCreate.
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        $accounts = config('admin.accounts');
 
-        // 1. SUPER ADMIN
-        User::create([
-            'name' => 'Super Administrator',
-            'email' => 'superadmin@webstudiofoto.test',
-            'role' => User::ROLE_SUPER_ADMIN,
-            'password' => Hash::make('PasswordAman123!'), // Password langsung ter-encrypt
-            'must_change_password' => false,
-        ]);
+        foreach ($accounts as $account) {
+            if (blank($account['password'])) {
+                throw new RuntimeException(
+                    'Set '.$account['password_env'].' in the environment before seeding admin accounts.'
+                );
+            }
+        }
 
-        // 2. ADMIN STUDIO / OPERATOR (Contoh tambahan jika ada)
-        User::create([
-            'name' => 'Studio Admin',
-            'email' => 'admin@webstudiofoto.test',
-            'role' => 'admin',
-            'password' => Hash::make('AdminStudio2026!'), // Password langsung ter-encrypt
-            'must_change_password' => false,
-        ]);
+        foreach ($accounts as $account) {
+            $user = User::query()->where('email', $account['email'])->first();
+            $credentialsChanged = ! $user || $user->role !== $account['role'];
+            $user ??= new User;
+            $user->name = $account['name'];
+            $user->email = $account['email'];
+            $user->role = $account['role'];
+
+            if ($credentialsChanged) {
+                $user->password = $account['password'];
+                $user->must_change_password = true;
+            }
+
+            $user->save();
+        }
     }
 }
