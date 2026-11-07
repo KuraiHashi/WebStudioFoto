@@ -18,7 +18,7 @@ class AdminAccountSeeder extends Seeder
         foreach ($accounts as $account) {
             if (blank($account['password'])) {
                 throw new RuntimeException(
-                    'Set '.$account['password_env'].' in the environment before seeding admin accounts.'
+                    'Atur '.$account['password_env'].' pada environment sebelum menjalankan seeder akun admin.'
                 );
             }
         }
