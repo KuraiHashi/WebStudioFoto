@@ -23,7 +23,7 @@
                     @if ($studio?->foto_studio)
                         <img src="{{ asset('storage/' . $studio->foto_studio) }}" alt="" class="studio-photo-icon">
                     @else
-                        <img src="{{ asset('Assets/images/logo.jpeg') }}" alt="" class="logo-icon">
+                        <span class="logo-script">No image</span>
                     @endif
                 </span>
                 <span class="logo-wordmark" aria-label="Liquif Picture">

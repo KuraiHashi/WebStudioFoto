@@ -71,6 +71,21 @@ class DashboardTest extends TestCase
             ->assertDontSee('UPCOMING-0001');
     }
 
+    public function test_dashboard_labels_delivered_photo_results_as_sent(): void
+    {
+        $package = $this->createPackage();
+        $reservation = $this->createReservation($package, 'PHOTO-SENT-001', 'Pelanggan', now()->subDay()->toDateString(), 'Selesai');
+        $reservation->update([
+            'photo_status' => 'siap',
+            'photo_delivery_url' => 'https://drive.google.com/folder',
+        ]);
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Hasil foto sudah dikirim')
+            ->assertDontSee('Foto siap dikirim');
+    }
+
     public function test_dashboard_shows_pending_proof_amount_to_help_admin_reconcile_a_bill(): void
     {
         $package = $this->createPackage();
@@ -82,7 +97,7 @@ class DashboardTest extends TestCase
             ->assertSee('Bukti menunggu verifikasi')
             ->assertSee('id="inputPendingProof"', false)
             ->assertSee('data-proof-amount="4500000"', false)
-            ->assertSee('paymentMismatchWarning');
+            ->assertSee('Nominal pembayaran tidak sesuai');
     }
 
     public function test_admin_can_activate_dp_for_reservation_without_payment_record(): void

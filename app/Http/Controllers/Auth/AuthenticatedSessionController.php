@@ -28,11 +28,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $destination = $request->user()->must_change_password
-            ? route('admin.account.edit', absolute: false)
-            : route('admin.dashboard', absolute: false);
-
-        return redirect()->intended($destination);
+        return redirect()->route('admin.dashboard');
     }
 
     /**

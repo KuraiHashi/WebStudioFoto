@@ -10,23 +10,7 @@
             </div>
         </div>
 
-        @if (session('success'))
-            <div class="dashboard-feedback success" role="status">{{ session('success') }}</div>
-        @endif
-        @if ($errors->any())
-            <div class="dashboard-feedback error" role="alert">
-                @foreach ($errors->all() as $error)
-                    <p>{{ $error }}</p>
-                @endforeach
-            </div>
-        @endif
-        @if ($user->must_change_password)
-            <div class="dashboard-feedback error" role="alert">
-                Password awal wajib diganti sebelum Anda dapat menggunakan fitur admin.
-            </div>
-        @endif
-
-        <div class="account-grid">
+        <div class="account-grid {{ $user->isSuperAdmin() ? 'has-admin-list' : 'single-account' }}">
             <section class="card account-panel">
                 <div class="eyebrow">Akun saya</div>
                 <h3>Ubah email dan password</h3>
@@ -47,14 +31,13 @@
                             autocomplete="current-password" required>
                     </div>
                     <div class="fld">
-                        <label for="account-password">Password baru <span>(minimal 12 karakter)</span></label>
-                        <input id="account-password" name="password" type="password" autocomplete="new-password"
-                            @required($user->must_change_password)>
+                        <label for="account-password">Password baru <span>(opsional, minimal 12 karakter)</span></label>
+                        <input id="account-password" name="password" type="password" autocomplete="new-password">
                     </div>
                     <div class="fld">
                         <label for="account-password-confirmation">Konfirmasi password baru</label>
                         <input id="account-password-confirmation" name="password_confirmation" type="password"
-                            autocomplete="new-password" @required($user->must_change_password)>
+                            autocomplete="new-password">
                     </div>
                     <button class="btn ink" type="submit">Simpan perubahan akun</button>
                 </form>
@@ -65,7 +48,7 @@
                     <div class="eyebrow">Akses super admin</div>
                     <h3>Kelola akun admin</h3>
                     <p class="account-description">
-                        Perubahan password akan mengharuskan admin terkait menggantinya saat login berikutnya.
+                        Password baru dapat langsung digunakan oleh admin terkait.
                     </p>
 
                     @forelse ($admins as $admin)

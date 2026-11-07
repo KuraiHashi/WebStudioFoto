@@ -28,14 +28,14 @@
                     <tbody>
                         @forelse ($rekenings as $item)
                             <tr>
-                                <td style="padding: 12px;">
+                                <td data-l="Nama bank" style="padding: 12px;">
                                     <strong>{{ $item->nama_bank }}</strong>
                                 </td>
-                                <td style="padding: 12px; font-family: monospace; font-size: 1.05rem;">
+                                <td data-l="No. rekening" style="padding: 12px; font-family: monospace; font-size: 1.05rem;">
                                     {{ $item->no_rekening }}
                                 </td>
-                                <td style="padding: 12px;">{{ $item->nama_pemilik }}</td>
-                                <td style="padding: 12px; text-align: center;">
+                                <td data-l="Nama pemilik" style="padding: 12px;">{{ $item->nama_pemilik }}</td>
+                                <td data-l="QRIS" style="padding: 12px; text-align: center;">
                                     @if ($item->foto_qris)
                                         <img src="{{ asset('storage/' . $item->foto_qris) }}" alt="QRIS"
                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" />
@@ -43,7 +43,7 @@
                                         <span style="color: #999; font-size: 0.9rem;">-</span>
                                     @endif
                                 </td>
-                                <td style="padding: 12px; text-align: center;">
+                                <td data-l="Aksi" style="padding: 12px; text-align: center;">
                                     <div style="display: flex; justify-content: center; gap: 4px;">
                                         <!-- Tombol Edit -->
                                         <button type="button" class="btn sm"
@@ -55,8 +55,7 @@
                                             style="margin: 0;">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" class="btn sm ink"
-                                                style="background-color: #dc3545; color: white; border: none;"
+                                            <button type="button" class="btn sm delete-btn"
                                                 onclick="confirmDelete({{ $item->id }})">Hapus</button>
                                         </form>
                                     </div>
@@ -176,30 +175,6 @@
         </div>
     </div>
 
-    {{-- Script SweetAlert2 Otomatis untuk Flash Message Laravel --}}
-    @if (session('success'))
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: "{{ session('success') }}",
-                showConfirmButton: false,
-                timer: 2500
-            });
-        </script>
-    @endif
-
-    @if ($errors->any())
-        <script>
-            Swal.fire({
-                icon: 'error',
-                title: 'Terjadi Kesalahan!',
-                html: `{!! implode('<br>', $errors->all()) !!}`,
-                confirmButtonText: 'OK'
-            });
-        </script>
-    @endif
-
     <script>
         function openModal(modalId) {
             let modal = document.getElementById(modalId);
@@ -218,7 +193,7 @@
                 text: "Data rekening yang dihapus tidak dapat dikembalikan!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#dc3545',
+                confirmButtonColor: '#a97f49',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Ya, hapus!',
                 cancelButtonText: 'Batal'

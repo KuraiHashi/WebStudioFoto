@@ -17,19 +17,6 @@
             </div>
         </div>
 
-        @if (session('success'))
-            <div class="dashboard-feedback success" role="status">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="dashboard-feedback error" role="alert">
-                <strong>Periksa kembali informasi berikut.</strong>
-                <p>{{ $errors->first() }}</p>
-            </div>
-        @endif
-
         <div class="profile-layout">
             <form action="{{ route('admin.profile.update') }}" method="POST" enctype="multipart/form-data"
                 class="fc profile-form" id="pform">

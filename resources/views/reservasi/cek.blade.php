@@ -139,7 +139,7 @@
 
                         <p class="note" id="r-msg" style="margin-top: 20px;">{{ $statusMessage }}</p>
 
-                        <div class="acts" style="margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="acts reservation-result-actions">
                             @if($canPay)
                                 <a href="{{ route('reservasi.pembayaran', ['token' => $payment->token]) }}" class="btn ink" style="background: #191512; color: #fff; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-size: 14px; font-weight: 500;">
                                     {{ $payment->status === 'Menunggu pembayaran DP' ? 'Bayar DP' : 'Bayar pelunasan' }}

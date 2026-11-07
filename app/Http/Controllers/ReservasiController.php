@@ -252,6 +252,9 @@ class ReservasiController extends Controller
         $studio = StudioProfile::first();
 
         $rekenings = Rekening::all();
+        $qrisRekening = $rekenings->first(
+            fn (Rekening $rekening): bool => filled($rekening->foto_qris)
+        );
 
         if ($token) {
             $payment = Payment::with(['reservation.package', 'reservation'])
@@ -260,7 +263,7 @@ class ReservasiController extends Controller
         }
 
         // Kirim $rekenings ke view detailPembayaran
-        return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio', 'rekenings'));
+        return view('reservasi.detailPembayaran', compact('payment', 'token', 'studio', 'rekenings', 'qrisRekening'));
     }
 
     /**

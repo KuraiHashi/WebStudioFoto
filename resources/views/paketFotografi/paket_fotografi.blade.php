@@ -43,7 +43,7 @@
 
                 <div class="pc {{ $isFeatured ? 'f' : '' }}" 
                      data-category="{{ $package->category }}"
-                     style="flex: 0 0 320px; scroll-snap-align: start;">
+                     style="flex: 0 0 min(320px, 100%); scroll-snap-align: start;">
                     <div class="rn">{{ $rn }}</div>
                     <h3>{{ $package->name }}</h3>
                     <div class="pr">Rp {{ number_format($package->price, 0, ',', '.') }}</div>
