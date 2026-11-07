@@ -16,15 +16,27 @@
                 <div class="eyebrow">Paket Layanan</div>
                 <h2 style="margin-top: 14px;">Pilih sesi yang <em>paling sesuai</em></h2>
             </div>
-            <div class="package-category-filters" role="group" aria-label="Filter kategori paket">
-                <button class="package-category-button is-active" type="button" data-category-filter=""
-                    aria-pressed="true">Semua</button>
-                @foreach ($packageCategories as $category)
-                    <button class="package-category-button" type="button" data-category-filter="{{ $category }}"
-                        aria-pressed="false">
-                        {{ $category }}
+            <div class="package-section-actions">
+                <div class="package-category-filters" role="group" aria-label="Filter kategori paket">
+                    <button class="package-category-button is-active" type="button" data-category-filter=""
+                        aria-pressed="true">Semua</button>
+                    @foreach ($packageCategories as $category)
+                        <button class="package-category-button" type="button"
+                            data-category-filter="{{ $category }}" aria-pressed="false">
+                            {{ $category }}
+                        </button>
+                    @endforeach
+                </div>
+                <div class="package-carousel-controls" role="group" aria-label="Navigasi daftar paket">
+                    <button class="package-carousel-button" type="button" data-package-scroll="left"
+                        aria-label="Geser daftar paket ke kiri" aria-controls="packageContainer" disabled>
+                        <span aria-hidden="true">&larr;</span>
                     </button>
-                @endforeach
+                    <button class="package-carousel-button" type="button" data-package-scroll="right"
+                        aria-label="Geser daftar paket ke kanan" aria-controls="packageContainer" disabled>
+                        <span aria-hidden="true">&rarr;</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -80,12 +92,39 @@
 document.addEventListener('DOMContentLoaded', function() {
     const categoryButtons = document.querySelectorAll('.package-category-button');
     const container = document.getElementById('packageContainer');
-    if (!categoryButtons.length || !container) {
+    if (!container) {
         return;
     }
 
     const cards = container.querySelectorAll('.pc');
     const noResultState = document.getElementById('noResultState');
+    const scrollButtons = document.querySelectorAll('[data-package-scroll]');
+
+    function updateScrollButtons() {
+        const hasVisibleCards = Array.from(cards).some(card => card.style.display !== 'none');
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+
+        scrollButtons.forEach(button => {
+            const isLeftButton = button.dataset.packageScroll === 'left';
+            const hasOverflow = hasVisibleCards && maxScrollLeft > 1;
+            button.disabled = !hasOverflow || (isLeftButton
+                ? container.scrollLeft <= 1
+                : container.scrollLeft >= maxScrollLeft - 1);
+        });
+    }
+
+    scrollButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const direction = button.dataset.packageScroll === 'left' ? -1 : 1;
+            container.scrollBy({
+                left: direction * container.clientWidth * 0.85,
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    container.addEventListener('scroll', updateScrollButtons, { passive: true });
+    window.addEventListener('resize', updateScrollButtons);
 
     function filterPackages(selectedCategory) {
         let visibleCount = 0;
@@ -100,6 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         noResultState.style.display = visibleCount === 0 ? 'block' : 'none';
+        container.scrollLeft = 0;
+        updateScrollButtons();
     }
 
     categoryButtons.forEach(button => {
@@ -115,5 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
             filterPackages(selectedCategory);
         });
     });
+
+    updateScrollButtons();
 });
 </script>

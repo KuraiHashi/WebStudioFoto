@@ -75,10 +75,15 @@ nav .l:hover,nav .l.active{opacity:1;color:var(--gold)}
 .pc .rn{font:italic 54px/1 var(--serif);color:var(--gold)}.pc .pr{font:500 32px var(--serif)}
 .pc ul{list-style:none;font-size:13.5px;opacity:.8;border-top:1px solid var(--line);padding-top:14px}
 .package-section-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;margin-bottom:32px}
+.package-section-actions{display:flex;align-items:center;justify-content:flex-end;flex:1;gap:14px}
 .package-category-filters{display:flex;justify-content:flex-end;flex:1;flex-wrap:wrap;gap:9px}
 .package-category-button{padding:10px 16px;border:1px solid rgba(0,0,0,.14);border-radius:999px;background:rgba(255,255,255,.55);font:400 13px var(--sans);color:inherit;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
 .package-category-button:hover,.package-category-button:focus-visible{border-color:var(--bronze);outline:none}
 .package-category-button.is-active{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.package-carousel-controls{display:flex;flex:none;gap:8px}
+.package-carousel-button{width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.18);border-radius:50%;background:rgba(255,255,255,.55);color:inherit;font:400 20px/1 var(--sans);cursor:pointer;transition:background .2s,border-color .2s,color .2s,opacity .2s}
+.package-carousel-button:hover:not(:disabled),.package-carousel-button:focus-visible{border-color:var(--bronze);background:var(--ink);color:var(--paper);outline:none}
+.package-carousel-button:disabled{opacity:.4;cursor:not-allowed}
 .pc li{padding:3px 0}.pc li:before{content:"— ";color:var(--bronze)}
 .pc .btn{margin-top:auto;align-self:flex-start}
 
@@ -384,6 +389,7 @@ html{-webkit-text-size-adjust:100%}
 @media(max-width:700px){
  .package-section-header{align-items:stretch}
  .package-category-filters{justify-content:flex-start}
+ .package-section-actions{justify-content:space-between;flex-wrap:wrap}
 }
 @media(max-width:760px){
  .pk,.flow ol,.pillars{grid-template-columns:1fr}.flow ol{gap:0}.pillars{gap:16px}

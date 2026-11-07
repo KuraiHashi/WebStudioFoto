@@ -62,6 +62,17 @@ class HomepageTest extends TestCase
             ->assertDontSee('gallery-play-control', false);
     }
 
+    public function test_homepage_shows_controls_for_the_package_carousel(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-package-scroll="left"', false)
+            ->assertSee('data-package-scroll="right"', false)
+            ->assertSee('aria-label="Geser daftar paket ke kiri"', false)
+            ->assertSee('aria-label="Geser daftar paket ke kanan"', false)
+            ->assertSee('aria-controls="packageContainer"', false);
+    }
+
     public function test_homepage_offers_only_available_package_categories_and_assigns_pre_wedding_correctly(): void
     {
         PhotographyPackage::create([
