@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminAccountController;
 use App\Http\Controllers\AdminsController;
 use App\Http\Controllers\GaleriController;
+use App\Http\Controllers\LifiChatController;
 use App\Http\Controllers\PaketFotografiController;
 use App\Http\Controllers\RekeningController;
 use App\Http\Controllers\ReservasiController;
@@ -20,6 +21,7 @@ Route::get('/reservasi/result', [ReservasiController::class, 'checkStatus'])->na
 Route::post('/reservasi/request-edit', [ReservasiController::class, 'requestPhotoEdit'])->name('reservasi.request-edit');
 Route::post('/reservasi/testimoni', [TestimonialController::class, 'store'])->name('reservasi.testimoni.store');
 Route::get('/api/reservasi/booked-slots', [ReservasiController::class, 'getBookedSchedules'])->name('reservasi.booked-slots');
+Route::post('/lifi/chat', LifiChatController::class)->middleware('throttle:10,1')->name('lifi.chat');
 Route::get('/reservasi/pembayaran', [ReservasiController::class, 'paymentPage'])->name('reservasi.pembayaran');
 Route::post('/reservasi/payment-history', [ReservasiController::class, 'storePaymentHistory'])->name('reservasi.payment.store');
 

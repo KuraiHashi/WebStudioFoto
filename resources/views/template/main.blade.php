@@ -13,6 +13,7 @@
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('Assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('Assets/css/lifi-chat.css') }}">
 </head>
 
 <body data-pg="index">
@@ -141,6 +142,8 @@
 
     <script src="{{ asset('Assets/js/app.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/gh/mcstudios/glightbox/dist/js/glightbox.min.js"></script>
+    @include('template.layout.lifi-chat')
+    <script src="{{ asset('Assets/js/lifi-chat.js') }}" defer></script>
 </body>
 
 </html>
